@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Stocked</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cream: #F7F4EF;
+    --cream-dark: #EDE9E1;
+    --cream-darker: #E0D9CE;
+    --stone: #9B9189;
+    --stone-light: #C8C1B8;
+    --ink: #2A2520;
+    --ink-soft: #4A4540;
+    --sage: #7A9E87;
+    --sage-light: #A8C5B0;
+    --sage-pale: #E8F0EA;
+    --amber: #C8823A;
+    --amber-light: #E8B87A;
+    --amber-pale: #FDF3E7;
+    --rose: #C97070;
+    --rose-pale: #FAEDED;
+    --sky: #6A9BB5;
+    --sky-pale: #EAF2F7;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 12px rgba(42,37,32,0.08);
+    --shadow-md: 0 4px 24px rgba(42,37,32,0.12);
+    --shadow-lg: 0 8px 40px rgba(42,37,32,0.16);
+    --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: var(--cream);
+  }
+
+  .auth-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 52px;
+    color: var(--ink);
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+
+  .auth-tagline {
+    font-size: 15px;
+    color: var(--stone);
+    font-weight: 300;
+    margin-bottom: 56px;
+    letter-spacing: 0.02em;
+  }
+
+  .auth-card {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 32px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+
+  .auth-card h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+
+  .auth-card p {
+    color: var(--stone);
+    font-size: 14px;
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+  }
+
+  .btn-google:hover { background: var(--ink-soft); transform: translateY(-1px); }
+  .btn-google:active { transform: translateY(0); }
+
+  .btn-google svg { width: 20px; height: 20px; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; min-height: 100vh; flex-direction: column; }
+  #app.visible { display: flex; }
+
+  /* ── TOP NAV ── */
+  .top-nav {
+    background: white;
+    border-bottom: 1px solid var(--cream-darker);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--sage-pale);
+    border: 2px solid var(--sage-light);
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sage);
+  }
+
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    transition: background var(--transition);
+  }
+
+  .icon-btn:hover { background: var(--cream); }
+
+  /* ── TAB BAR ── */
+  .tab-bar {
+    display: flex;
+    background: white;
+    border-bottom: 1px solid var(--cream-darker);
+    padding: 0 20px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color var(--transition), border-color var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+
+  .tab-badge {
+    background: var(--rose);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    padding: 12px 20px;
+    background: var(--cream);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-bottom: 1px solid var(--cream-darker);
+  }
+
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--stone);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    background: white;
+    border: 1px solid var(--cream-darker);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color var(--transition);
+  }
+
+  .search-input:focus { border-color: var(--stone); }
+  .search-input::placeholder { color: var(--stone-light); }
+
+  .filter-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .filter-chips::-webkit-scrollbar { display: none; }
+
+  .chip {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--cream-darker);
+    background: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stone);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+
+  .chip.active {
+    background: var(--ink);
+    color: white;
+    border-color: var(--ink);
+  }
+
+  .chip.warning.active { background: var(--rose); border-color: var(--rose); }
+  .chip.needs.active { background: var(--amber); border-color: var(--amber); }
+
+  /* ── MAIN CONTENT ── */
+  .main-content {
+    flex: 1;
+    padding: 16px 20px 100px;
+    overflow-y: auto;
+  }
+
+  /* ── CATEGORY GROUP ── */
+  .category-group {
+    margin-bottom: 28px;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .category-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  .items-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ── ITEM CARD ── */
+  .item-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: box-shadow var(--transition), transform var(--transition);
+    border: 1.5px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .item-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .item-card:active { transform: translateY(0); }
+  .item-card.needs-use { border-color: var(--amber-light); background: var(--amber-pale); }
+  .item-card.expiring { border-color: #E8A0A0; background: var(--rose-pale); }
+  .item-card.expired { border-color: var(--rose); background: var(--rose-pale); opacity: 0.85; }
+
+  .item-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Container badge */
+  .container-badge {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+
+  .container-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    border: 1px solid var(--cream-darker);
+  }
+
+  .count-bubble {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    background: var(--ink);
+    color: white;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid white;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    z-index: 2;
+  }
+
+  .count-bubble:hover { background: var(--sage); transform: scale(1.1); }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+  }
+
+  .item-qty {
+    font-size: 12px;
+    color: var(--stone);
+  }
+
+  .location-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .location-tag.pantry { background: var(--cream-dark); color: var(--stone); }
+  .location-tag.fridge { background: var(--sky-pale); color: var(--sky); }
+  .location-tag.freezer { background: #E8EEFF; color: #6A7FB5; }
+
+  .exp-tag {
+    font-size: 11px;
+    color: var(--stone);
+  }
+
+  .exp-tag.soon { color: var(--amber); font-weight: 600; }
+  .exp-tag.expired-txt { color: var(--rose); font-weight: 600; }
+
+  .item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .toggle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--cream);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--stone);
+    font-size: 15px;
+    transition: all var(--transition);
+  }
+
+  .toggle-btn:hover { background: var(--cream-dark); }
+  .toggle-btn.active { background: var(--amber-pale); color: var(--amber); }
+  .toggle-btn.grocery-active { background: var(--sage-pale); color: var(--sage); }
+
+  /* Expanded detail panel */
+  .item-detail {
+    display: none;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--cream-darker);
+  }
+
+  .item-detail.open { display: block; animation: fadeIn 0.2s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .detail-field label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .detail-field span {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .detail-notes {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    background: var(--cream);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+  }
+
+  .recipe-links { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+  .recipe-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--sky);
+    text-decoration: none;
+    padding: 8px 12px;
+    background: var(--sky-pale);
+    border-radius: var(--radius-sm);
+  }
+
+  .price-history { font-size: 12px; color: var(--stone); }
+  .price-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--cream-darker); }
+  .price-row:last-child { border-bottom: none; }
+
+  .detail-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .btn-sm {
+    flex: 1;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn-edit { background: var(--cream-dark); color: var(--ink); }
+  .btn-edit:hover { background: var(--cream-darker); }
+  .btn-delete { background: var(--rose-pale); color: var(--rose); }
+  .btn-delete:hover { background: #F5D5D5; }
+  .btn-grocery { background: var(--sage-pale); color: var(--sage); }
+  .btn-grocery:hover { background: #D0E8D8; }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(42,37,32,0.3);
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    z-index: 200;
+    font-size: 24px;
+  }
+
+  .fab:hover { background: var(--ink-soft); transform: scale(1.05); box-shadow: 0 6px 28px rgba(42,37,32,0.35); }
+  .fab:active { transform: scale(0.97); }
+
+  /* ── GROCERY LIST ── */
+  .grocery-section { margin-bottom: 24px; }
+
+  .grocery-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  .grocery-item {
+    background: white;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    transition: opacity var(--transition);
+  }
+
+  .grocery-item.checked { opacity: 0.5; }
+
+  .check-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--cream-darker);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+  }
+
+  .check-circle.checked { background: var(--sage); border-color: var(--sage); color: white; }
+
+  .grocery-info { flex: 1; min-width: 0; }
+  .grocery-name { font-size: 15px; font-weight: 500; }
+  .grocery-sub { font-size: 12px; color: var(--stone); margin-top: 2px; }
+
+  .grocery-actions { display: flex; gap: 6px; }
+
+  .btn-pantry-move {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    background: var(--sage-pale);
+    color: var(--sage);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition);
+    white-space: nowrap;
+  }
+
+  .btn-pantry-move:hover { background: #C8E8D0; }
+
+  .btn-del-grocery {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--stone-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition);
+  }
+
+  .btn-del-grocery:hover { color: var(--rose); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(42,37,32,0.4);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+
+  .modal {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 24px 40px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .modal-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--cream-darker);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 6px;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--cream-darker);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: white;
+    outline: none;
+    transition: border-color var(--transition);
+    appearance: none;
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--ink); }
+  .form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  .toggle-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .toggle-option {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--cream-darker);
+    background: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition);
+    color: var(--stone);
+  }
+
+  .toggle-option.selected { background: var(--ink); color: white; border-color: var(--ink); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition);
+    margin-top: 8px;
+  }
+
+  .btn-primary:hover { background: var(--ink-soft); }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    color: var(--stone);
+    border: 1.5px solid var(--cream-darker);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all var(--transition);
+  }
+
+  .btn-secondary:hover { background: var(--cream); }
+
+  /* Autofill suggestion */
+  .autofill-banner {
+    background: var(--sage-pale);
+    border: 1px solid var(--sage-light);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .autofill-banner button {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 5px 12px;
+    background: var(--sage);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ── MOVE TO PANTRY MODAL ── */
+  .confirm-btns { display: flex; gap: 10px; margin-top: 16px; }
+  .confirm-btns .btn-primary { flex: 1; margin-top: 0; }
+  .confirm-btns .btn-skip {
+    padding: 15px 20px;
+    background: transparent;
+    color: var(--stone);
+    border: 1.5px solid var(--cream-darker);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  /* ── HOUSEHOLD MODAL ── */
+  .household-member {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--cream-darker);
+  }
+
+  .member-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--sage-pale);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sage);
+    flex-shrink: 0;
+  }
+
+  .member-name { font-size: 14px; font-weight: 500; }
+  .member-email { font-size: 12px; color: var(--stone); }
+  .member-you { font-size: 11px; color: var(--sage); font-weight: 600; margin-left: auto; }
+
+  .invite-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .invite-input-row .form-input { flex: 1; }
+
+  .btn-invite {
+    padding: 12px 18px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--stone);
+  }
+
+  .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 500;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── COUNT POPOVER ── */
+  .count-popover {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    z-index: 50;
+    white-space: nowrap;
+  }
+
+  .count-popover button {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--cream-darker);
+    background: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--ink);
+    transition: background var(--transition);
+  }
+
+  .count-popover button:hover { background: var(--cream); }
+  .count-popover span { font-size: 16px; font-weight: 600; min-width: 24px; text-align: center; }
+
+  /* ── SORT DROPDOWN ── */
+  .sort-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0 20px 10px;
+  }
+
+  .sort-label { font-size: 12px; color: var(--stone); }
+
+  .sort-select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--ink);
+    border: 1px solid var(--cream-darker);
+    border-radius: 8px;
+    padding: 4px 8px;
+    background: white;
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* Responsive */
+  @media (min-width: 600px) {
+    .items-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .modal { border-radius: 24px; margin-bottom: 20px; }
+    .modal-overlay { align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-logo">Stocked</div>
+  <div class="auth-tagline">Your household pantry, always in sync.</div>
+  <div class="auth-card">
+    <h2>Welcome back</h2>
+    <p>Sign in to access your pantry and grocery lists shared with your household.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.4 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16.1 18.9 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5.1l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-2.6-11.3-6.5l-6.5 5C9.7 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6.2 5.2C40.9 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+      Continue with Google
+    </button>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+  <!-- Top Nav -->
+  <nav class="top-nav">
+    <div class="nav-logo">Stocked</div>
+    <div class="nav-right">
+      <button class="icon-btn" onclick="openHousehold()" title="Household">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </button>
+      <div class="avatar" id="user-avatar" onclick="signOut()">?</div>
+    </div>
+  </nav>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab active" id="tab-pantry" onclick="switchTab('pantry')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Pantry
+    </button>
+    <button class="tab" id="tab-grocery" onclick="switchTab('grocery')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Grocery
+      <span class="tab-badge" id="grocery-badge" style="display:none">0</span>
+    </button>
+  </div>
+
+  <!-- PANTRY VIEW -->
+  <div id="view-pantry">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="text" placeholder="Search pantry…" id="pantry-search" oninput="renderPantry()" />
+      </div>
+      <div class="filter-chips" id="pantry-filter-chips">
+        <button class="chip active" data-filter="all" onclick="setFilter(this,'pantry')">All</button>
+        <button class="chip warning" data-filter="expiring" onclick="setFilter(this,'pantry')">⚠ Expiring</button>
+        <button class="chip needs" data-filter="needs-use" onclick="setFilter(this,'pantry')">🔥 Needs Use</button>
+        <button class="chip" data-filter="pantry" onclick="setFilter(this,'pantry')">Pantry</button>
+        <button class="chip" data-filter="fridge" onclick="setFilter(this,'pantry')">Fridge</button>
+        <button class="chip" data-filter="freezer" onclick="setFilter(this,'pantry')">Freezer</button>
+      </div>
+    </div>
+    <div class="sort-row">
+      <span class="sort-label">Sort:</span>
+      <select class="sort-select" id="pantry-sort" onchange="renderPantry()">
+        <option value="name">Name</option>
+        <option value="expiration">Expiration</option>
+        <option value="category">Category</option>
+        <option value="added">Date Added</option>
+      </select>
+    </div>
+    <div class="main-content" id="pantry-list"></div>
+  </div>
+
+  <!-- GROCERY VIEW -->
+  <div id="view-grocery" style="display:none">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="text" placeholder="Search grocery list…" id="grocery-search" oninput="renderGrocery()" />
+      </div>
+    </div>
+    <div class="main-content" id="grocery-list"></div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="fab" onclick="openAddModal()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- ── MODALS ── -->
+
+<!-- ADD / EDIT ITEM MODAL -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="autofill-banner" class="autofill-banner" style="display:none">
+      <span>🔄 Found previous entry for this item.</span>
+      <button onclick="applyAutofill()">Autofill</button>
+    </div>
+    <div class="modal-title" id="modal-title">Add Item</div>
+
+    <div class="form-group">
+      <label>Item Name *</label>
+      <input class="form-input" id="f-name" type="text" placeholder="e.g. Chicken Thighs" oninput="checkAutofill()" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category</label>
+        <select class="form-select" id="f-category">
+          <option value="">Select…</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Storage Location</label>
+        <div class="toggle-group" id="f-location-group">
+          <button class="toggle-option selected" data-val="pantry" onclick="selectToggle(this,'location')">Pantry</button>
+          <button class="toggle-option" data-val="fridge" onclick="selectToggle(this,'location')">Fridge</button>
+          <button class="toggle-option" data-val="freezer" onclick="selectToggle(this,'location')">Freezer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Quantity</label>
+        <input class="form-input" id="f-qty" type="number" min="0" step="0.1" placeholder="e.g. 2" />
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <select class="form-select" id="f-unit">
+          <option value="">—</option>
+          <option>oz</option><option>lb</option><option>g</option><option>kg</option>
+          <option>fl oz</option><option>cup</option><option>L</option><option>ml</option>
+          <option>item</option><option>pack</option><option>box</option><option>can</option>
+          <option>bag</option><option>bunch</option><option>dozen</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Containers</label>
+        <input class="form-input" id="f-containers" type="number" min="1" value="1" placeholder="1" />
+      </div>
+      <div class="form-group">
+        <label>Expiration Date</label>
+        <input class="form-input" id="f-expiration" type="date" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Needs Use?</label>
+      <div class="toggle-group" id="f-needsuse-group">
+        <button class="toggle-option" data-val="true" onclick="selectToggle(this,'needsuse')">🔥 Yes</button>
+        <button class="toggle-option selected" data-val="false" onclick="selectToggle(this,'needsuse')">No</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea class="form-textarea" id="f-notes" placeholder="Brand preferences, cooking tips, family notes…"></textarea>
+    </div>
+
+    <!-- Price / Retailer (collapsible) -->
+    <div class="form-group">
+      <label style="cursor:pointer" onclick="togglePriceSection()">
+        💰 Price & Retailer Details
+        <span id="price-toggle-icon" style="float:right;color:var(--stone)">▼</span>
+      </label>
+      <div id="price-section" style="display:none; margin-top:10px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Retailer</label>
+            <input class="form-input" id="f-retailer" type="text" placeholder="e.g. Costco" />
+          </div>
+          <div class="form-group">
+            <label>Price</label>
+            <input class="form-input" id="f-price" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Price Per</label>
+          <div class="toggle-group" id="f-priceper-group">
+            <button class="toggle-option selected" data-val="item" onclick="selectToggle(this,'priceper')">Item</button>
+            <button class="toggle-option" data-val="oz" onclick="selectToggle(this,'priceper')">oz</button>
+            <button class="toggle-option" data-val="lb" onclick="selectToggle(this,'priceper')">lb</button>
+            <button class="toggle-option" data-val="set" onclick="selectToggle(this,'priceper')">Set</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recipe Links -->
+    <div class="form-group">
+      <label style="cursor:pointer" onclick="toggleRecipeSection()">
+        🍳 Recipe Links
+        <span id="recipe-toggle-icon" style="float:right;color:var(--stone)">▼</span>
+      </label>
+      <div id="recipe-section" style="display:none; margin-top:10px;">
+        <div id="recipe-links-list"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input class="form-input" id="f-recipe-label" type="text" placeholder="Label (e.g. Stir Fry)" style="flex:1" />
+          <input class="form-input" id="f-recipe-url" type="url" placeholder="https://…" style="flex:2" />
+          <button onclick="addRecipeLink()" style="padding:10px 14px;background:var(--ink);color:white;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:18px;">+</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveItem()">Save Item</button>
+    <button class="btn-secondary" onclick="closeModal('modal-item')">Cancel</button>
+  </div>
+</div>
+
+<!-- ADD GROCERY ITEM MODAL -->
+<div class="modal-overlay" id="modal-grocery">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add to Grocery List</div>
+    <div class="form-group">
+      <label>Item Name *</label>
+      <input class="form-input" id="g-name" type="text" placeholder="e.g. Oat Milk" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Quantity</label>
+        <input class="form-input" id="g-qty" type="number" min="1" value="1" />
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <select class="form-select" id="g-unit">
+          <option value="">—</option>
+          <option>oz</option><option>lb</option><option>item</option><option>pack</option>
+          <option>box</option><option>can</option><option>bag</option><option>bunch</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Store (optional)</label>
+      <input class="form-input" id="g-store" type="text" placeholder="e.g. Trader Joe's" />
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select class="form-select" id="g-category">
+        <option value="">Select…</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveGroceryItem()">Add to List</button>
+    <button class="btn-secondary" onclick="closeModal('modal-grocery')">Cancel</button>
+  </div>
+</div>
+
+<!-- MOVE TO PANTRY MODAL -->
+<div class="modal-overlay" id="modal-move-pantry">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="move-pantry-title">Move to Pantry</div>
+    <div id="autofill-move-banner" class="autofill-banner" style="display:none">
+      <span>🔄 Found previous purchase info.</span>
+      <button onclick="applyMoveAutofill()">Autofill</button>
+    </div>
+    <p style="font-size:14px;color:var(--stone);margin-bottom:16px;">Fill in details or skip to add directly.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Quantity</label>
+        <input class="form-input" id="mp-qty" type="number" min="0" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <select class="form-select" id="mp-unit">
+          <option value="">—</option>
+          <option>oz</option><option>lb</option><option>g</option><option>kg</option>
+          <option>fl oz</option><option>cup</option><option>L</option><option>ml</option>
+          <option>item</option><option>pack</option><option>box</option><option>can</option><option>bag</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Containers</label>
+        <input class="form-input" id="mp-containers" type="number" min="1" value="1" />
+      </div>
+      <div class="form-group">
+        <label>Expiration Date</label>
+        <input class="form-input" id="mp-expiration" type="date" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Storage Location</label>
+      <div class="toggle-group" id="mp-location-group">
+        <button class="toggle-option selected" data-val="pantry" onclick="selectToggle(this,'mp-location')">Pantry</button>
+        <button class="toggle-option" data-val="fridge" onclick="selectToggle(this,'mp-location')">Fridge</button>
+        <button class="toggle-option" data-val="freezer" onclick="selectToggle(this,'mp-location')">Freezer</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Store</label>
+        <input class="form-input" id="mp-retailer" type="text" placeholder="e.g. Costco" />
+      </div>
+      <div class="form-group">
+        <label>Price Paid</label>
+        <input class="form-input" id="mp-price" type="number" min="0" step="0.01" placeholder="0.00" />
+      </div>
+    </div>
+    <div class="confirm-btns">
+      <button class="btn-primary" onclick="confirmMoveToPantry()">Move to Pantry</button>
+      <button class="btn-skip" onclick="quickMoveToPantry()">Skip</button>
+    </div>
+    <button class="btn-secondary" onclick="closeModal('modal-move-pantry')">Cancel</button>
+  </div>
+</div>
+
+<!-- HOUSEHOLD MODAL -->
+<div class="modal-overlay" id="modal-household">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Household</div>
+    <p style="font-size:13px;color:var(--stone);margin-bottom:16px;">Everyone in your household shares this pantry in real time.</p>
+    <div id="household-members"></div>
+    <div class="invite-input-row">
+      <input class="form-input" id="invite-email" type="email" placeholder="Invite by email…" />
+      <button class="btn-invite" onclick="inviteMember()">Invite</button>
+    </div>
+    <button class="btn-secondary" onclick="closeModal('modal-household')" style="margin-top:16px;">Done</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ── SCRIPTS ── -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getDatabase, ref, push, set, remove, onValue, update, get, child
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAJlfW-prbW2aZOKz9sySl4Mt6OTEMELEk",
+  authDomain: "stocked-28446.firebaseapp.com",
+  projectId: "stocked-28446",
+  storageBucket: "stocked-28446.firebasestorage.app",
+  messagingSenderId: "890037002917",
+  appId: "1:890037002917:web:5e8372134365b637f2e34c"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// ── STATE ──
+let currentUser = null;
+let householdId = null;
+let pantryItems = {};
+let groceryItems = {};
+let householdMembers = {};
+let currentTab = 'pantry';
+let pantryFilter = 'all';
+let editingItemId = null;
+let movingGroceryId = null;
+let currentRecipeLinks = [];
+let autofillData = null;
+let moveAutofillData = null;
+
+// Default + custom categories
+const DEFAULT_CATEGORIES = [
+  'Proteins','Produce','Dairy','Grains & Carbs','Snacks',
+  'Beverages','Condiments','Canned Goods','Frozen','Other'
+];
+
+const CATEGORY_EMOJI = {
+  'Proteins':'🥩','Produce':'🥦','Dairy':'🧀','Grains & Carbs':'🍞',
+  'Snacks':'🍿','Beverages':'🥤','Condiments':'🫙','Canned Goods':'🥫',
+  'Frozen':'❄️','Other':'📦'
+};
+
+function getCategoryEmoji(cat) {
+  return CATEGORY_EMOJI[cat] || '🏷️';
+}
+
+// ── AUTH ──
+window.signInWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { showToast('Sign in failed. Try again.'); }
+};
+
+window.signOut = async () => {
+  if (confirm('Sign out?')) { await fbSignOut(auth); }
+};
+
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    const av = document.getElementById('user-avatar');
+    if (user.photoURL) av.innerHTML = `<img src="${user.photoURL}" />`;
+    else av.textContent = user.displayName?.[0] || user.email?.[0] || '?';
+    await ensureHousehold();
+    subscribeToData();
+  } else {
+    currentUser = null;
+    householdId = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').classList.remove('visible');
+  }
+});
+
+async function ensureHousehold() {
+  // Check if user already belongs to a household
+  const userHouseholdRef = ref(db, `userHouseholds/${currentUser.uid}`);
+  const snap = await get(userHouseholdRef);
+  if (snap.exists()) {
+    householdId = snap.val();
+  } else {
+    // Create new household
+    const hhRef = push(ref(db, 'households'));
+    householdId = hhRef.key;
+    const memberData = {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      displayName: currentUser.displayName || currentUser.email,
+      photoURL: currentUser.photoURL || ''
+    };
+    await set(ref(db, `households/${householdId}/members/${currentUser.uid}`), memberData);
+    await set(ref(db, `userHouseholds/${currentUser.uid}`), householdId);
+  }
+}
+
+function subscribeToData() {
+  // Pantry
+  onValue(ref(db, `households/${householdId}/pantry`), snap => {
+    pantryItems = snap.val() || {};
+    renderPantry();
+  });
+  // Grocery
+  onValue(ref(db, `households/${householdId}/grocery`), snap => {
+    groceryItems = snap.val() || {};
+    renderGrocery();
+    updateGroceryBadge();
+  });
+  // Members
+  onValue(ref(db, `households/${householdId}/members`), snap => {
+    householdMembers = snap.val() || {};
+  });
+}
+
+// ── TABS ──
+window.switchTab = (tab) => {
+  currentTab = tab;
+  document.getElementById('view-pantry').style.display = tab === 'pantry' ? 'block' : 'none';
+  document.getElementById('view-grocery').style.display = tab === 'grocery' ? 'block' : 'none';
+  document.getElementById('tab-pantry').classList.toggle('active', tab === 'pantry');
+  document.getElementById('tab-grocery').classList.toggle('active', tab === 'grocery');
+};
+
+// ── CATEGORIES ──
+function getCategories() {
+  const custom = Object.values(pantryItems)
+    .map(i => i.category)
+    .filter(c => c && !DEFAULT_CATEGORIES.includes(c));
+  return [...DEFAULT_CATEGORIES, ...new Set(custom)];
+}
+
+function populateCategorySelects() {
+  const cats = getCategories();
+  ['f-category','g-category'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Select…</option>' +
+      cats.map(c => `<option value="${c}">${c}</option>`).join('') +
+      `<option value="__custom__">+ Add Category…</option>`;
+    if (cur) sel.value = cur;
+  });
+}
+
+// ── FILTERS ──
+window.setFilter = (el, view) => {
+  document.querySelectorAll('#pantry-filter-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  pantryFilter = el.dataset.filter;
+  renderPantry();
+};
+
+// ── RENDER PANTRY ──
+window.renderPantry = () => {
+  const search = document.getElementById('pantry-search').value.toLowerCase().trim();
+  const sort = document.getElementById('pantry-sort').value;
+
+  let items = Object.entries(pantryItems).map(([id, item]) => ({ id, ...item }));
+
+  // Filter
+  if (pantryFilter !== 'all') {
+    if (pantryFilter === 'expiring') items = items.filter(i => getExpStatus(i.expiration) !== 'ok');
+    else if (pantryFilter === 'needs-use') items = items.filter(i => i.needsUse);
+    else items = items.filter(i => i.location === pantryFilter);
+  }
+
+  // Search
+  if (search) items = items.filter(i =>
+    (i.name || '').toLowerCase().includes(search) ||
+    (i.category || '').toLowerCase().includes(search) ||
+    (i.notes || '').toLowerCase().includes(search)
+  );
+
+  // Sort
+  items.sort((a, b) => {
+    if (sort === 'name') return (a.name||'').localeCompare(b.name||'');
+    if (sort === 'expiration') return (a.expiration||'9999').localeCompare(b.expiration||'9999');
+    if (sort === 'category') return (a.category||'').localeCompare(b.category||'');
+    if (sort === 'added') return (b.addedAt||0) - (a.addedAt||0);
+    return 0;
+  });
+
+  const container = document.getElementById('pantry-list');
+
+  if (items.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="emoji">🥫</div><h3>Nothing here yet</h3><p>Tap + to add your first pantry item.</p></div>`;
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  items.forEach(item => {
+    const cat = item.category || 'Other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(item);
+  });
+
+  container.innerHTML = Object.entries(groups).map(([cat, catItems]) => `
+    <div class="category-group">
+      <div class="category-label">${getCategoryEmoji(cat)} ${cat}</div>
+      <div class="items-grid">
+        ${catItems.map(item => renderItemCard(item)).join('')}
+      </div>
+    </div>
+  `).join('');
+};
+
+function getExpStatus(expDate) {
+  if (!expDate) return 'ok';
+  const now = new Date(); now.setHours(0,0,0,0);
+  const exp = new Date(expDate + 'T00:00:00');
+  const diff = (exp - now) / (1000*60*60*24);
+  if (diff < 0) return 'expired';
+  if (diff <= 3) return 'expiring';
+  return 'ok';
+}
+
+function formatExpLabel(expDate) {
+  if (!expDate) return '';
+  const status = getExpStatus(expDate);
+  const now = new Date(); now.setHours(0,0,0,0);
+  const exp = new Date(expDate + 'T00:00:00');
+  const diff = Math.round((exp - now) / (1000*60*60*24));
+  if (status === 'expired') return `<span class="exp-tag expired-txt">Expired</span>`;
+  if (status === 'expiring') return `<span class="exp-tag soon">Exp. ${diff === 0 ? 'today' : `in ${diff}d`}</span>`;
+  return `<span class="exp-tag">Exp. ${expDate}</span>`;
+}
+
+function renderItemCard(item) {
+  const expStatus = getExpStatus(item.expiration);
+  let cardClass = 'item-card';
+  if (item.needsUse) cardClass += ' needs-use';
+  else if (expStatus === 'expiring') cardClass += ' expiring';
+  else if (expStatus === 'expired') cardClass += ' expired';
+
+  const locTag = `<span class="location-tag ${item.location||'pantry'}">${item.location||'pantry'}</span>`;
+  const expTag = formatExpLabel(item.expiration);
+  const qty = item.quantity ? `${item.quantity}${item.unit ? ' '+item.unit : ''}` : '';
+  const containers = item.containers || 1;
+
+  // Price history
+  const priceHistory = (item.priceHistory || []).slice(-3).reverse().map(p =>
+    `<div class="price-row"><span>${p.retailer||'—'}</span><span>$${parseFloat(p.price).toFixed(2)} / ${p.pricePer||'item'}</span><span style="color:var(--stone-light)">${p.date||''}</span></div>`
+  ).join('');
+
+  // Recipe links
+  const recipes = (item.recipeLinks || []).map(r =>
+    `<a class="recipe-link" href="${r.url}" target="_blank" rel="noopener">🍳 ${r.label||r.url}</a>`
+  ).join('');
+
+  return `
+    <div class="${cardClass}" id="card-${item.id}">
+      <div class="item-main">
+        <div class="container-badge">
+          <div class="container-icon">${getCategoryEmoji(item.category||'Other')}</div>
+          <div class="count-bubble" onclick="openCountPopover(event,'${item.id}',${containers})">${containers}</div>
+        </div>
+        <div class="item-info" onclick="toggleDetail('${item.id}')">
+          <div class="item-name">${escHtml(item.name||'')}</div>
+          <div class="item-meta">
+            ${qty ? `<span class="item-qty">${escHtml(qty)}</span>` : ''}
+            ${locTag}
+            ${expTag}
+          </div>
+        </div>
+        <div class="item-actions">
+          <button class="toggle-btn ${item.needsUse ? 'active' : ''}" title="Needs Use" onclick="toggleNeedsUse('${item.id}',${!!item.needsUse})">🔥</button>
+          <button class="toggle-btn grocery-active" title="Add to Grocery" onclick="addToGroceryFromPantry('${item.id}')">🛒</button>
+        </div>
+      </div>
+      <div class="item-detail" id="detail-${item.id}">
+        <div class="detail-grid">
+          ${item.retailer ? `<div class="detail-field"><label>Retailer</label><span>${escHtml(item.retailer)}</span></div>` : ''}
+          ${item.price ? `<div class="detail-field"><label>Price</label><span>$${parseFloat(item.price).toFixed(2)} / ${item.pricePer||'item'}</span></div>` : ''}
+        </div>
+        ${item.notes ? `<div class="detail-notes">📝 ${escHtml(item.notes)}</div>` : ''}
+        ${recipes ? `<div class="recipe-links">${recipes}</div>` : ''}
+        ${priceHistory ? `<div class="price-history">${priceHistory}</div>` : ''}
+        <div class="detail-actions">
+          <button class="btn-sm btn-edit" onclick="editItem('${item.id}')">✏️ Edit</button>
+          <button class="btn-sm btn-grocery" onclick="addToGroceryFromPantry('${item.id}')">🛒 Restock</button>
+          <button class="btn-sm btn-delete" onclick="deleteItem('${item.id}')">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.toggleDetail = (id) => {
+  const el = document.getElementById(`detail-${id}`);
+  if (el) el.classList.toggle('open');
+};
+
+// ── COUNT POPOVER ──
+let activePopover = null;
+window.openCountPopover = (e, id, count) => {
+  e.stopPropagation();
+  if (activePopover) { activePopover.remove(); activePopover = null; }
+  const badge = e.currentTarget;
+  const popover = document.createElement('div');
+  popover.className = 'count-popover';
+  popover.innerHTML = `
+    <button onclick="adjustCount('${id}', -1, this)">−</button>
+    <span id="pop-count-${id}">${count}</span>
+    <button onclick="adjustCount('${id}', 1, this)">+</button>
+  `;
+  badge.parentElement.appendChild(popover);
+  activePopover = popover;
+  setTimeout(() => document.addEventListener('click', dismissPopover, {once:true}), 0);
+};
+
+function dismissPopover() { if (activePopover) { activePopover.remove(); activePopover = null; } }
+
+window.adjustCount = (id, delta, btn) => {
+  btn.disabled = true;
+  const item = pantryItems[id];
+  if (!item) return;
+  const newCount = Math.max(0, (item.containers || 1) + delta);
+  update(ref(db, `households/${householdId}/pantry/${id}`), { containers: newCount })
+    .finally(() => btn.disabled = false);
+};
+
+// ── NEEDS USE TOGGLE ──
+window.toggleNeedsUse = (id, current) => {
+  update(ref(db, `households/${householdId}/pantry/${id}`), { needsUse: !current });
+};
+
+// ── RENDER GROCERY ──
+window.renderGrocery = () => {
+  const search = document.getElementById('grocery-search').value.toLowerCase().trim();
+  const container = document.getElementById('grocery-list');
+
+  let items = Object.entries(groceryItems).map(([id, item]) => ({ id, ...item }));
+  if (search) items = items.filter(i => (i.name||'').toLowerCase().includes(search));
+
+  if (items.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="emoji">🛒</div><h3>List is empty</h3><p>Add items to your grocery list or restock from your pantry.</p></div>`;
+    return;
+  }
+
+  const unchecked = items.filter(i => !i.checked);
+  const checked = items.filter(i => i.checked);
+
+  let html = '';
+  if (unchecked.length) {
+    html += `<div class="grocery-section"><div class="grocery-section-label">To Get (${unchecked.length})</div>${unchecked.map(renderGroceryItem).join('')}</div>`;
+  }
+  if (checked.length) {
+    html += `<div class="grocery-section"><div class="grocery-section-label">✓ In Cart (${checked.length})</div>${checked.map(renderGroceryItem).join('')}</div>`;
+  }
+  container.innerHTML = html;
+};
+
+function renderGroceryItem(item) {
+  const qty = item.quantity ? `${item.quantity}${item.unit ? ' '+item.unit : ''}` : '';
+  return `
+    <div class="grocery-item ${item.checked ? 'checked' : ''}" id="gitem-${item.id}">
+      <div class="check-circle ${item.checked ? 'checked' : ''}" onclick="toggleGroceryCheck('${item.id}',${!!item.checked})">
+        ${item.checked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </div>
+      <div class="grocery-info">
+        <div class="grocery-name">${escHtml(item.name||'')}</div>
+        <div class="grocery-sub">${qty}${item.store ? ` · ${escHtml(item.store)}` : ''}${item.category ? ` · ${item.category}` : ''}</div>
+      </div>
+      <div class="grocery-actions">
+        ${item.checked ? `<button class="btn-pantry-move" onclick="openMoveToPantry('${item.id}')">→ Pantry</button>` : ''}
+        <button class="btn-del-grocery" onclick="deleteGroceryItem('${item.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+window.toggleGroceryCheck = (id, current) => {
+  update(ref(db, `households/${householdId}/grocery/${id}`), { checked: !current });
+};
+
+function updateGroceryBadge() {
+  const count = Object.values(groceryItems).filter(i => !i.checked).length;
+  const badge = document.getElementById('grocery-badge');
+  if (count > 0) { badge.style.display = ''; badge.textContent = count; }
+  else badge.style.display = 'none';
+}
+
+window.deleteGroceryItem = (id) => {
+  remove(ref(db, `households/${householdId}/grocery/${id}`));
+};
+
+window.addToGroceryFromPantry = (id) => {
+  const item = pantryItems[id];
+  if (!item) return;
+  const gRef = push(ref(db, `households/${householdId}/grocery`));
+  set(gRef, {
+    name: item.name,
+    category: item.category || '',
+    quantity: item.quantity || '',
+    unit: item.unit || '',
+    store: item.retailer || '',
+    checked: false,
+    addedAt: Date.now(),
+    fromPantryId: id
+  });
+  showToast(`${item.name} added to grocery list`);
+  switchTab('grocery');
+};
+
+// ── MOVE TO PANTRY ──
+window.openMoveToPantry = (groceryId) => {
+  movingGroceryId = groceryId;
+  const gItem = groceryItems[groceryId];
+  document.getElementById('move-pantry-title').textContent = `Move "${gItem?.name||''}" to Pantry`;
+
+  // Check autofill from pantry history
+  const existing = Object.values(pantryItems).find(p =>
+    p.name?.toLowerCase() === gItem?.name?.toLowerCase()
+  );
+  if (existing) {
+    moveAutofillData = existing;
+    document.getElementById('autofill-move-banner').style.display = 'flex';
+  } else {
+    moveAutofillData = null;
+    document.getElementById('autofill-move-banner').style.display = 'none';
+  }
+
+  // Reset fields
+  document.getElementById('mp-qty').value = '';
+  document.getElementById('mp-unit').value = '';
+  document.getElementById('mp-containers').value = 1;
+  document.getElementById('mp-expiration').value = '';
+  document.getElementById('mp-retailer').value = gItem?.store || '';
+  document.getElementById('mp-price').value = '';
+  resetToggleGroup('mp-location-group', 'pantry');
+
+  openModal('modal-move-pantry');
+};
+
+window.applyMoveAutofill = () => {
+  if (!moveAutofillData) return;
+  const d = moveAutofillData;
+  document.getElementById('mp-qty').value = d.quantity || '';
+  document.getElementById('mp-unit').value = d.unit || '';
+  document.getElementById('mp-containers').value = d.containers || 1;
+  document.getElementById('mp-retailer').value = d.retailer || '';
+  if (d.location) resetToggleGroup('mp-location-group', d.location);
+  showToast('Autofilled from previous entry');
+};
+
+window.confirmMoveToPantry = () => {
+  const gItem = groceryItems[movingGroceryId];
+  if (!gItem) return;
+  const location = getToggleVal('mp-location-group') || 'pantry';
+  const newItem = {
+    name: gItem.name,
+    category: gItem.category || '',
+    location,
+    quantity: document.getElementById('mp-qty').value || '',
+    unit: document.getElementById('mp-unit').value || '',
+    containers: parseInt(document.getElementById('mp-containers').value) || 1,
+    expiration: document.getElementById('mp-expiration').value || '',
+    retailer: document.getElementById('mp-retailer').value || '',
+    needsUse: false,
+    addedAt: Date.now(),
+    priceHistory: []
+  };
+  const price = parseFloat(document.getElementById('mp-price').value);
+  if (!isNaN(price) && price > 0) {
+    newItem.priceHistory = [{ price, retailer: newItem.retailer, pricePer: 'item', date: new Date().toISOString().split('T')[0] }];
+  }
+  const pRef = push(ref(db, `households/${householdId}/pantry`));
+  set(pRef, newItem).then(() => {
+    remove(ref(db, `households/${householdId}/grocery/${movingGroceryId}`));
+    showToast(`${gItem.name} moved to pantry`);
+    closeModal('modal-move-pantry');
+    switchTab('pantry');
+  });
+};
+
+window.quickMoveToPantry = () => {
+  const gItem = groceryItems[movingGroceryId];
+  if (!gItem) return;
+  const pRef = push(ref(db, `households/${householdId}/pantry`));
+  set(pRef, {
+    name: gItem.name,
+    category: gItem.category || '',
+    location: 'pantry',
+    quantity: gItem.quantity || '',
+    unit: gItem.unit || '',
+    containers: 1,
+    needsUse: false,
+    addedAt: Date.now(),
+    priceHistory: []
+  }).then(() => {
+    remove(ref(db, `households/${householdId}/grocery/${movingGroceryId}`));
+    showToast(`${gItem.name} added to pantry`);
+    closeModal('modal-move-pantry');
+    switchTab('pantry');
+  });
+};
+
+// ── ADD / EDIT ITEM ──
+window.openAddModal = () => {
+  editingItemId = null;
+  currentRecipeLinks = [];
+  autofillData = null;
+  document.getElementById('modal-title').textContent = currentTab === 'grocery' ? 'Add to Grocery' : 'Add Item';
+
+  if (currentTab === 'grocery') {
+    populateCategorySelects();
+    openModal('modal-grocery');
+    return;
+  }
+
+  populateCategorySelects();
+  resetItemForm();
+  openModal('modal-item');
+};
+
+function resetItemForm() {
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-category').value = '';
+  document.getElementById('f-qty').value = '';
+  document.getElementById('f-unit').value = '';
+  document.getElementById('f-containers').value = 1;
+  document.getElementById('f-expiration').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-retailer').value = '';
+  document.getElementById('f-price').value = '';
+  document.getElementById('autofill-banner').style.display = 'none';
+  resetToggleGroup('f-location-group', 'pantry');
+  resetToggleGroup('f-needsuse-group', 'false');
+  resetToggleGroup('f-priceper-group', 'item');
+  currentRecipeLinks = [];
+  renderRecipeLinks();
+  document.getElementById('price-section').style.display = 'none';
+  document.getElementById('recipe-section').style.display = 'none';
+}
+
+window.editItem = (id) => {
+  editingItemId = id;
+  const item = pantryItems[id];
+  if (!item) return;
+  populateCategorySelects();
+  document.getElementById('modal-title').textContent = 'Edit Item';
+  document.getElementById('f-name').value = item.name || '';
+  document.getElementById('f-category').value = item.category || '';
+  document.getElementById('f-qty').value = item.quantity || '';
+  document.getElementById('f-unit').value = item.unit || '';
+  document.getElementById('f-containers').value = item.containers || 1;
+  document.getElementById('f-expiration').value = item.expiration || '';
+  document.getElementById('f-notes').value = item.notes || '';
+  document.getElementById('f-retailer').value = item.retailer || '';
+  document.getElementById('f-price').value = item.price || '';
+  resetToggleGroup('f-location-group', item.location || 'pantry');
+  resetToggleGroup('f-needsuse-group', item.needsUse ? 'true' : 'false');
+  resetToggleGroup('f-priceper-group', item.pricePer || 'item');
+  currentRecipeLinks = item.recipeLinks ? [...item.recipeLinks] : [];
+  renderRecipeLinks();
+  document.getElementById('autofill-banner').style.display = 'none';
+  openModal('modal-item');
+};
+
+window.checkAutofill = () => {
+  const name = document.getElementById('f-name').value.trim().toLowerCase();
+  if (!name || editingItemId) { document.getElementById('autofill-banner').style.display = 'none'; return; }
+  const match = Object.values(pantryItems).find(i => i.name?.toLowerCase() === name);
+  if (match) {
+    autofillData = match;
+    document.getElementById('autofill-banner').style.display = 'flex';
+  } else {
+    autofillData = null;
+    document.getElementById('autofill-banner').style.display = 'none';
+  }
+};
+
+window.applyAutofill = () => {
+  if (!autofillData) return;
+  const d = autofillData;
+  document.getElementById('f-category').value = d.category || '';
+  document.getElementById('f-qty').value = d.quantity || '';
+  document.getElementById('f-unit').value = d.unit || '';
+  document.getElementById('f-containers').value = d.containers || 1;
+  document.getElementById('f-notes').value = d.notes || '';
+  document.getElementById('f-retailer').value = d.retailer || '';
+  document.getElementById('f-price').value = d.price || '';
+  if (d.location) resetToggleGroup('f-location-group', d.location);
+  if (d.pricePer) resetToggleGroup('f-priceper-group', d.pricePer);
+  if (d.recipeLinks) { currentRecipeLinks = [...d.recipeLinks]; renderRecipeLinks(); }
+  showToast('Autofilled from previous entry');
+};
+
+window.saveItem = () => {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('Item name is required'); return; }
+
+  let category = document.getElementById('f-category').value;
+  if (category === '__custom__') {
+    category = prompt('Enter custom category name:')?.trim() || 'Other';
+  }
+
+  const item = {
+    name,
+    category,
+    location: getToggleVal('f-location-group') || 'pantry',
+    quantity: document.getElementById('f-qty').value || '',
+    unit: document.getElementById('f-unit').value || '',
+    containers: parseInt(document.getElementById('f-containers').value) || 1,
+    expiration: document.getElementById('f-expiration').value || '',
+    needsUse: getToggleVal('f-needsuse-group') === 'true',
+    notes: document.getElementById('f-notes').value.trim(),
+    retailer: document.getElementById('f-retailer').value.trim(),
+    price: document.getElementById('f-price').value || '',
+    pricePer: getToggleVal('f-priceper-group') || 'item',
+    recipeLinks: currentRecipeLinks,
+    updatedAt: Date.now()
+  };
+
+  const price = parseFloat(item.price);
+  if (editingItemId) {
+    const existing = pantryItems[editingItemId];
+    item.addedAt = existing?.addedAt || Date.now();
+    item.priceHistory = existing?.priceHistory || [];
+    if (!isNaN(price) && price > 0 && (item.retailer || price !== parseFloat(existing?.price))) {
+      item.priceHistory = [...item.priceHistory, { price, retailer: item.retailer, pricePer: item.pricePer, date: new Date().toISOString().split('T')[0] }].slice(-10);
+    }
+    update(ref(db, `households/${householdId}/pantry/${editingItemId}`), item)
+      .then(() => { showToast('Item updated'); closeModal('modal-item'); });
+  } else {
+    item.addedAt = Date.now();
+    item.priceHistory = [];
+    if (!isNaN(price) && price > 0) {
+      item.priceHistory = [{ price, retailer: item.retailer, pricePer: item.pricePer, date: new Date().toISOString().split('T')[0] }];
+    }
+    const pRef = push(ref(db, `households/${householdId}/pantry`));
+    set(pRef, item).then(() => { showToast(`${name} added to pantry`); closeModal('modal-item'); });
+  }
+};
+
+window.deleteItem = (id) => {
+  if (!confirm('Remove this item from pantry?')) return;
+  remove(ref(db, `households/${householdId}/pantry/${id}`));
+  showToast('Item removed');
+};
+
+// ── GROCERY MODAL ──
+window.saveGroceryItem = () => {
+  const name = document.getElementById('g-name').value.trim();
+  if (!name) { showToast('Item name is required'); return; }
+  let category = document.getElementById('g-category').value;
+  if (category === '__custom__') category = prompt('Enter custom category:')?.trim() || '';
+  const gRef = push(ref(db, `households/${householdId}/grocery`));
+  set(gRef, {
+    name,
+    category,
+    quantity: document.getElementById('g-qty').value || '',
+    unit: document.getElementById('g-unit').value || '',
+    store: document.getElementById('g-store').value.trim(),
+    checked: false,
+    addedAt: Date.now()
+  }).then(() => { showToast(`${name} added to grocery list`); closeModal('modal-grocery'); });
+};
+
+// ── RECIPE LINKS ──
+window.addRecipeLink = () => {
+  const label = document.getElementById('f-recipe-label').value.trim();
+  const url = document.getElementById('f-recipe-url').value.trim();
+  if (!url) { showToast('Enter a URL'); return; }
+  currentRecipeLinks.push({ label: label || url, url });
+  document.getElementById('f-recipe-label').value = '';
+  document.getElementById('f-recipe-url').value = '';
+  renderRecipeLinks();
+};
+
+function renderRecipeLinks() {
+  document.getElementById('recipe-links-list').innerHTML = currentRecipeLinks.map((r, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream-darker)">
+      <span style="flex:1;font-size:13px;color:var(--sky)">🍳 ${escHtml(r.label)}</span>
+      <button onclick="removeRecipeLink(${i})" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:16px;">×</button>
+    </div>
+  `).join('');
+}
+
+window.removeRecipeLink = (i) => { currentRecipeLinks.splice(i, 1); renderRecipeLinks(); };
+
+window.togglePriceSection = () => {
+  const s = document.getElementById('price-section');
+  const icon = document.getElementById('price-toggle-icon');
+  const open = s.style.display === 'none';
+  s.style.display = open ? 'block' : 'none';
+  icon.textContent = open ? '▲' : '▼';
+};
+
+window.toggleRecipeSection = () => {
+  const s = document.getElementById('recipe-section');
+  const icon = document.getElementById('recipe-toggle-icon');
+  const open = s.style.display === 'none';
+  s.style.display = open ? 'block' : 'none';
+  icon.textContent = open ? '▲' : '▼';
+};
+
+// ── HOUSEHOLD ──
+window.openHousehold = () => {
+  renderHouseholdMembers();
+  openModal('modal-household');
+};
+
+function renderHouseholdMembers() {
+  const container = document.getElementById('household-members');
+  container.innerHTML = Object.values(householdMembers).map(m => `
+    <div class="household-member">
+      <div class="member-avatar">${(m.displayName||m.email||'?')[0].toUpperCase()}</div>
+      <div>
+        <div class="member-name">${escHtml(m.displayName||m.email||'')}</div>
+        <div class="member-email">${escHtml(m.email||'')}</div>
+      </div>
+      ${m.uid === currentUser?.uid ? '<span class="member-you">You</span>' : ''}
+    </div>
+  `).join('') || '<p style="color:var(--stone);font-size:13px;">No members yet.</p>';
+}
+
+window.inviteMember = async () => {
+  const email = document.getElementById('invite-email').value.trim();
+  if (!email) return;
+  // Store invite for user to join when they sign in
+  await set(ref(db, `invites/${email.replace(/\./g,'_')}`), {
+    householdId,
+    invitedBy: currentUser.email,
+    invitedAt: Date.now()
+  });
+  showToast(`Invite sent to ${email}`);
+  document.getElementById('invite-email').value = '';
+};
+
+// ── TOGGLE GROUP HELPERS ──
+window.selectToggle = (el, group) => {
+  const parent = el.closest('.toggle-group');
+  parent.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+};
+
+function getToggleVal(groupId) {
+  const sel = document.querySelector(`#${groupId} .toggle-option.selected`);
+  return sel ? sel.dataset.val : null;
+}
+
+function resetToggleGroup(groupId, val) {
+  document.querySelectorAll(`#${groupId} .toggle-option`).forEach(b => {
+    b.classList.toggle('selected', b.dataset.val === val);
+  });
+}
+
+// ── MODAL HELPERS ──
+window.openModal = (id) => {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeModal = (id) => {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+// ── TOAST ──
+window.showToast = (msg) => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+};
+
+// ── UTIL ──
+window.escHtml = (str) => String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// Handle invite on sign-in
+async function checkInvite(user) {
+  const emailKey = user.email.replace(/\./g,'_');
+  const inviteSnap = await get(ref(db, `invites/${emailKey}`));
+  if (inviteSnap.exists()) {
+    const invite = inviteSnap.val();
+    // Update household
+    await set(ref(db, `households/${invite.householdId}/members/${user.uid}`), {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || user.email,
+      photoURL: user.photoURL || ''
+    });
+    await set(ref(db, `userHouseholds/${user.uid}`), invite.householdId);
+    await remove(ref(db, `invites/${emailKey}`));
+    householdId = invite.householdId;
+  }
+}
+
+// Patch ensureHousehold to check invites first
+const _ensureHousehold = async () => {
+  await checkInvite(currentUser);
+  const userHouseholdRef = ref(db, `userHouseholds/${currentUser.uid}`);
+  const snap = await get(userHouseholdRef);
+  if (snap.exists()) {
+    householdId = snap.val();
+  } else {
+    const hhRef = push(ref(db, 'households'));
+    householdId = hhRef.key;
+    await set(ref(db, `households/${householdId}/members/${currentUser.uid}`), {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      displayName: currentUser.displayName || currentUser.email,
+      photoURL: currentUser.photoURL || ''
+    });
+    await set(ref(db, `userHouseholds/${currentUser.uid}`), householdId);
+  }
+};
+
+// Override with patched version
+Object.defineProperty(window, '_ensureHousehold', { value: _ensureHousehold });
+
+// Expose for auth state handler
+window._ensureHouseholdPatched = _ensureHousehold;
+</script>
+
+<script>
+// Re-wire auth to use patched household check
+// (runs after module loads)
+</script>
+</body>
+</html>
