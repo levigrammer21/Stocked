@@ -358,6 +358,17 @@
   .item-name { font-size: 15px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .item-meta { display: flex; align-items: center; gap: 7px; margin-top: 4px; flex-wrap: wrap; }
   .item-qty, .variant-meta, .grocery-sub { font-size: 12px; color: var(--stone); }
+  .grocery-title-wrap { display: flex; flex-direction: column; gap: 1px; }
+  .grocery-variant-title { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.25; }
+  .grocery-parent-title { font-size: 11px; font-weight: 600; color: var(--stone-light); line-height: 1.2; }
+  .quick-edit { cursor: pointer; border-bottom: 1px dashed var(--stone-light); }
+  .quick-edit:hover { color: var(--ink); border-bottom-color: var(--ink-soft); }
+  .qty-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,0.72); border: 1px solid var(--cream-darker); color: var(--ink-soft); }
+  .drag-handle { width: 26px; height: 34px; border: none; background: transparent; color: var(--stone-light); cursor: grab; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: none; }
+  .drag-handle:active { cursor: grabbing; color: var(--ink-soft); }
+  .item-card.dragging { opacity: .55; transform: scale(.98); }
+  .item-card.drag-over { outline: 2px dashed var(--sage); outline-offset: 3px; }
+
 
   .pill { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
   .location-tag.pantry { background: var(--tan-pale); color: #8B674A; }
@@ -707,6 +718,18 @@
   </div>
 </div>
 
+
+<div class="modal-overlay" id="modal-quick-qty">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="quick-qty-title">Change Quantity</div>
+    <p style="font-size:13px;color:var(--stone);margin-bottom:16px;">Quickly update the amount without opening the full edit form.</p>
+    <div class="form-row"><div class="form-group"><label>Quantity</label><input class="form-input" id="quick-qty-value" type="number" min="0" step="0.1" /></div><div class="form-group"><label>Unit</label><select class="form-select" id="quick-qty-unit"></select></div></div>
+    <button class="btn-primary" onclick="saveQuickQuantity()" type="button">Save Quantity</button>
+    <button class="btn-secondary" onclick="closeModal('modal-quick-qty')" type="button">Cancel</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -750,6 +773,8 @@ let moveAutofillData = null;
 let itemIconImageData = '';
 let locationTouched = false;
 let activePopover = null;
+let draggedStock = null;
+let quickQtyTarget = null;
 
 const UNITS = ['', 'oz','lb','g','kg','fl oz','cup','L','ml','item','pack','box','can','bag','bunch','dozen','roll','bottle','jug','tub'];
 
@@ -978,6 +1003,8 @@ function renderItemCollection(tab) {
     items = items.filter(i => [i.name, i.category, i.notes, i.retailer, ...variantsArray(i).map(v => v.name)].some(v => String(v || '').toLowerCase().includes(search)));
   }
   items.sort((a,b) => {
+    const sameCat = String(a.category || 'Other') === String(b.category || 'Other');
+    if (sameCat && (a.sortOrder !== undefined || b.sortOrder !== undefined)) return (Number(a.sortOrder ?? 999999) - Number(b.sortOrder ?? 999999)) || (a.name || '').localeCompare(b.name || '');
     if (sort === 'expiration') return (a.expiration || '9999').localeCompare(b.expiration || '9999');
     if (sort === 'category') return (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || '');
     if (sort === 'added') return (b.addedAt || 0) - (a.addedAt || 0);
@@ -992,7 +1019,7 @@ function renderItemCollection(tab) {
   }
   const groups = {};
   items.forEach(item => { const cat = item.category || 'Other'; if (!groups[cat]) groups[cat] = []; groups[cat].push(item); });
-  container.innerHTML = Object.entries(groups).map(([cat, catItems]) => `<div class="category-group"><div class="category-label">${getCategoryEmoji(cat)} ${escHtml(cat)}</div><div class="items-grid">${catItems.map(renderItemCard).join('')}</div></div>`).join('');
+  container.innerHTML = Object.entries(groups).map(([cat, catItems]) => `<div class="category-group"><div class="category-label">${getCategoryEmoji(cat)} ${escHtml(cat)}</div><div class="items-grid" data-collection="${escAttr(catItems[0]?.collection || COLLECTION_BY_TAB[tab] || 'pantry')}" data-category="${escAttr(cat)}">${catItems.map(renderItemCard).join('')}</div></div>`).join('');
 }
 
 function variantsArray(item) {
@@ -1060,10 +1087,11 @@ function renderItemCard(item) {
   const recipes = (item.recipeLinks || []).map(r => { const url = safeUrl(r.url); return url ? `<a class="recipe-link" href="${escAttr(url)}" target="_blank" rel="noopener">🍳 ${escHtml(r.label || r.url)}</a>` : ''; }).join('');
   const statusPills = `${item.runningLow ? '<span class="pill status-low">Running Low</span>' : ''}${item.needsUse ? '<span class="pill status-needs">Needs Use</span>' : ''}`;
   const variantHtml = vars.length ? `<div class="variant-list">${vars.map(v => renderVariantRow(item, v)).join('')}</div>` : '';
-  return `<div class="item-card ${itemStatusClass(item)}" id="card-${item.collection}-${item.id}">
+  return `<div class="item-card ${itemStatusClass(item)}" id="card-${item.collection}-${item.id}" draggable="true" data-collection="${escAttr(item.collection)}" data-id="${escAttr(item.id)}" data-category="${escAttr(item.category || 'Other')}" ondragstart="startStockDrag(event,'${item.collection}','${item.id}')" ondragover="dragOverStock(event)" ondragleave="dragLeaveStock(event)" ondrop="dropStockItem(event,'${item.collection}','${item.id}')" ondragend="endStockDrag(event)">
     <div class="item-main">
+      <button class="drag-handle" title="Hold and drag to reorder" type="button" onclick="event.stopPropagation()">⋮⋮</button>
       <div class="container-badge"><div class="container-icon">${itemIcon(item)}</div><div class="count-bubble ${containers === 0 ? 'zero' : ''}" onclick="openCountPopover(event,'${item.collection}','${item.id}',null,${containers})">${containers}</div></div>
-      <div class="item-info" onclick="toggleDetail('${item.collection}','${item.id}')"><div class="item-name">${escHtml(item.name || '')}</div><div class="item-meta">${qty ? `<span class="item-qty">${escHtml(qty)}</span>` : ''}<span class="pill location-tag ${escAttr(loc)}">${escHtml(loc)}</span>${formatExpLabel(item.expiration)}${statusPills}</div></div>
+      <div class="item-info" onclick="toggleDetail('${item.collection}','${item.id}')"><div class="item-name">${escHtml(item.name || '')}</div><div class="item-meta">${qty ? `<span class="item-qty quick-edit qty-chip" onclick="openQuickQuantity(event,'stock','${item.collection}','${item.id}','')">${escHtml(qty)}</span>` : `<span class="item-qty quick-edit qty-chip" onclick="openQuickQuantity(event,'stock','${item.collection}','${item.id}','')">Qty</span>`}<span class="pill location-tag ${escAttr(loc)}">${escHtml(loc)}</span>${formatExpLabel(item.expiration)}${statusPills}</div></div>
       <div class="item-actions"><button class="toggle-btn ${item.runningLow ? 'active-low' : ''}" title="Running Low" onclick="toggleItemFlag('${item.collection}','${item.id}','runningLow',${!!item.runningLow})" type="button">📉</button>${item.needsUse ? `<button class="toggle-btn active-needs" title="Needs Use" onclick="toggleItemFlag('${item.collection}','${item.id}','needsUse',true)" type="button">🔥</button>` : ''}<button class="toggle-btn grocery-active" title="Add to Grocery" onclick="addToGroceryFromStock('${item.collection}','${item.id}')" type="button">🛒</button></div>
     </div>
     ${variantHtml}
@@ -1076,10 +1104,98 @@ function renderVariantRow(parent, variant) {
   const qty = hasValue(variant.quantity) ? `${variant.quantity}${variant.unit ? ' ' + variant.unit : ''}` : '';
   const status = `${variant.runningLow ? '<span class="pill status-low">Low</span>' : ''}${variant.needsUse ? '<span class="pill status-needs">Use</span>' : ''}${formatExpLabel(variant.expiration)}`;
   const vkey = escAttr(variant.variantId || variant.name || '');
-  return `<div class="variant-row"><span class="variant-name">${escHtml(variant.name || 'Type')}</span>${qty ? `<span class="variant-meta">${escHtml(qty)}</span>` : ''}${status}<span class="variant-count ${count === 0 ? 'zero' : ''}" onclick="openCountPopover(event,'${parent.collection}','${parent.id}','${vkey}',${count})">${count}</span><div class="variant-actions"><button class="tiny-btn" onclick="addToGroceryFromStock('${parent.collection}','${parent.id}','${vkey}')" type="button">🛒</button></div></div>`;
+  return `<div class="variant-row"><span class="variant-name">${escHtml(variant.name || 'Type')}</span><span class="variant-meta quick-edit qty-chip" onclick="openQuickQuantity(event,'variant','${parent.collection}','${parent.id}','${vkey}')">${qty ? escHtml(qty) : 'Qty'}</span>${status}<span class="variant-count ${count === 0 ? 'zero' : ''}" onclick="openCountPopover(event,'${parent.collection}','${parent.id}','${vkey}',${count})">${count}</span><div class="variant-actions"><button class="tiny-btn" onclick="addToGroceryFromStock('${parent.collection}','${parent.id}','${vkey}')" type="button">🛒</button></div></div>`;
 }
 
 window.toggleDetail = (collection, id) => document.getElementById(`detail-${collection}-${id}`)?.classList.toggle('open');
+
+
+window.startStockDrag = (event, collection, id) => {
+  const item = itemMapForCollection(collection)[id];
+  if (!item) return;
+  draggedStock = { collection, id, category: item.category || 'Other' };
+  event.currentTarget.classList.add('dragging');
+  try { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', `${collection}:${id}`); } catch(e) {}
+};
+window.dragOverStock = (event) => {
+  if (!draggedStock) return;
+  const target = event.currentTarget;
+  if (target?.dataset?.category !== draggedStock.category || target?.dataset?.collection !== draggedStock.collection) return;
+  event.preventDefault();
+  target.classList.add('drag-over');
+};
+window.dragLeaveStock = (event) => event.currentTarget?.classList.remove('drag-over');
+window.endStockDrag = (event) => {
+  event.currentTarget?.classList.remove('dragging');
+  document.querySelectorAll('.item-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+};
+window.dropStockItem = async (event, targetCollection, targetId) => {
+  event.preventDefault();
+  event.currentTarget?.classList.remove('drag-over');
+  if (!draggedStock || draggedStock.collection !== targetCollection || draggedStock.id === targetId) { draggedStock = null; return; }
+  const itemsMap = itemMapForCollection(targetCollection);
+  const draggedItem = itemsMap[draggedStock.id];
+  const targetItem = itemsMap[targetId];
+  if (!draggedItem || !targetItem) { draggedStock = null; return; }
+  const category = draggedItem.category || 'Other';
+  if ((targetItem.category || 'Other') !== category) { showToast('Items can only be moved within the same label'); draggedStock = null; return; }
+  let siblings = Object.entries(itemsMap).map(([sid, item]) => ({ sid, ...item })).filter(i => (i.category || 'Other') === category);
+  siblings.sort((a,b) => (Number(a.sortOrder ?? 999999) - Number(b.sortOrder ?? 999999)) || (a.name || '').localeCompare(b.name || ''));
+  const from = siblings.findIndex(i => i.sid === draggedStock.id);
+  const to = siblings.findIndex(i => i.sid === targetId);
+  if (from < 0 || to < 0) { draggedStock = null; return; }
+  const [moved] = siblings.splice(from, 1);
+  siblings.splice(to, 0, moved);
+  const updates = {};
+  siblings.forEach((i, index) => { updates[`households/${householdId}/${targetCollection}/${i.sid}/sortOrder`] = index; });
+  await update(ref(db), updates);
+  draggedStock = null;
+  showToast('Moved item');
+};
+
+window.openQuickQuantity = (event, targetType, collection, id, variantKey = '') => {
+  event.stopPropagation();
+  const item = itemMapForCollection(collection)[id];
+  if (!item) return;
+  let title = item.name || 'Item';
+  let quantity = item.quantity ?? '';
+  let unit = item.unit || '';
+  if (targetType === 'variant') {
+    const variant = variantsArray(item).find(v => String(v.variantId || v.name) === String(variantKey));
+    if (!variant) return;
+    title = variant.name || title;
+    quantity = variant.quantity ?? '';
+    unit = variant.unit || item.unit || '';
+  }
+  quickQtyTarget = { targetType, collection, id, variantKey };
+  document.getElementById('quick-qty-title').textContent = `Change ${title}`;
+  document.getElementById('quick-qty-value').value = quantity;
+  fillUnitSelect('quick-qty-unit', unit);
+  openModal('modal-quick-qty');
+};
+
+window.saveQuickQuantity = async () => {
+  if (!quickQtyTarget) return;
+  const { targetType, collection, id, variantKey } = quickQtyTarget;
+  const item = itemMapForCollection(collection)[id];
+  if (!item) return;
+  const quantity = parseNonNegativeNumber(document.getElementById('quick-qty-value').value, '');
+  const unit = document.getElementById('quick-qty-unit').value || '';
+  if (targetType === 'variant') {
+    const variants = variantsArray(item);
+    const idx = variants.findIndex(v => String(v.variantId || v.name) === String(variantKey));
+    if (idx >= 0) {
+      variants[idx].quantity = quantity;
+      variants[idx].unit = unit;
+      await update(ref(db, `households/${householdId}/${collection}/${id}`), { variants, updatedAt: Date.now() });
+    }
+  } else {
+    await update(ref(db, `households/${householdId}/${collection}/${id}`), { quantity, unit, updatedAt: Date.now() });
+  }
+  closeModal('modal-quick-qty');
+  quickQtyTarget = null;
+  showToast('Quantity updated');
+};
 
 window.openCountPopover = (e, collection, id, variantKey, count) => {
   e.stopPropagation();
@@ -1231,13 +1347,13 @@ window.renderGrocery = () => {
 
 function renderGroceryItem(item) {
   const noPrice = !hasPriceForGrocery(item);
-  const estimate = groceryGroupEstimate(item);
   const qty = hasValue(item.quantity) ? `${Number(item.quantity)}${item.unit ? ' ' + item.unit : ''}` : '';
   const ids = item.ids || [item.id];
-  const title = item.variantName ? `${item.name} — ${item.variantName}` : item.name;
-  return `<div class="grocery-item ${item.checked ? 'checked' : ''} ${noPrice ? 'no-price' : ''}"><div class="check-circle ${item.checked ? 'checked' : ''}" onclick="toggleGroceryCheck(${escAttr(JSON.stringify(ids))},${!!item.checked})">${item.checked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div><div class="grocery-info"><div class="grocery-name">${escHtml(title || '')}</div><div class="grocery-sub">${qty}${item.store ? ` · ${escHtml(item.store)}` : ''}${item.category ? ` · ${escHtml(item.category)}` : ''}${noPrice ? ' · $? Needs price' : ''}</div></div>${estimate !== null ? `<span class="price-chip">${formatMoney(estimate)}</span>` : ''}<div class="grocery-actions">${item.checked ? `<button class="btn-pantry-move" onclick="openMoveToPantry('${ids[0]}')" type="button">→ Stock</button>` : ''}<button class="btn-del-grocery" onclick="deleteGroceryItems(${escAttr(JSON.stringify(ids))})" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div></div>`;
+  const titleHtml = item.variantName
+    ? `<div class="grocery-title-wrap"><div class="grocery-variant-title">${escHtml(item.variantName || '')}</div><div class="grocery-parent-title">${escHtml(item.name || '')}</div></div>`
+    : `<div class="grocery-name">${escHtml(item.name || '')}</div>`;
+  return `<div class="grocery-item ${item.checked ? 'checked' : ''} ${noPrice ? 'no-price' : ''}"><div class="check-circle ${item.checked ? 'checked' : ''}" onclick="toggleGroceryCheck(${escAttr(JSON.stringify(ids))},${!!item.checked})">${item.checked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div><div class="grocery-info">${titleHtml}<div class="grocery-sub">${qty ? `<span class="qty-chip">${escHtml(qty)}</span>` : '<span class="qty-chip">Qty?</span>'}${item.store ? ` · ${escHtml(item.store)}` : ''}${item.category ? ` · ${escHtml(item.category)}` : ''}${noPrice ? ' · $? Needs price' : ''}</div></div><div class="grocery-actions">${item.checked ? `<button class="btn-pantry-move" onclick="openMoveToPantry('${ids[0]}')" type="button">→ Stock</button>` : ''}<button class="btn-del-grocery" onclick="deleteGroceryItems(${escAttr(JSON.stringify(ids))})" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div></div>`;
 }
-
 
 window.toggleGroceryCheck = (ids, current) => { if (!Array.isArray(ids)) ids = [ids]; ids.forEach(id => update(ref(db, `households/${householdId}/grocery/${id}`), { checked: !current })); };
 window.deleteGroceryItems = (ids) => { if (!Array.isArray(ids)) ids = [ids]; ids.forEach(id => remove(ref(db, `households/${householdId}/grocery/${id}`))); };
@@ -1334,7 +1450,7 @@ window.openAddModal = () => {
   locationTouched = false;
   itemIconImageData = '';
   populateCategorySelects(); populateRetailerDatalist();
-  fillUnitSelect('f-unit'); fillUnitSelect('g-unit'); fillUnitSelect('mp-unit');
+  fillUnitSelect('f-unit'); fillUnitSelect('g-unit'); fillUnitSelect('mp-unit'); fillUnitSelect('quick-qty-unit');
   if (currentTab === 'grocery') { resetGroceryForm(); openModal('modal-grocery'); return; }
   resetItemForm();
   document.getElementById('modal-title').textContent = currentTab === 'animals' ? 'Add Animal Supply' : currentTab === 'household' ? 'Add Household Supply' : 'Add Pantry Item';
@@ -1602,7 +1718,7 @@ window.inviteMember = async () => {
   document.getElementById('invite-email').value = '';
 };
 
-window.openModal = (id) => { document.getElementById(id)?.classList.add('open'); document.body.style.overflow = 'hidden'; };
+window.openModal = (id) => { const overlay = document.getElementById(id); overlay?.classList.add('open'); const modal = overlay?.querySelector('.modal'); if (modal) modal.scrollTop = 0; document.body.style.overflow = 'hidden'; };
 window.closeModal = (id) => { document.getElementById(id)?.classList.remove('open'); document.body.style.overflow = ''; };
 document.querySelectorAll('.modal-overlay').forEach(overlay => overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); }));
 
@@ -1613,7 +1729,7 @@ window.escHtml = escHtml;
 window.renderGrocery = renderGrocery;
 window.renderCurrentView = renderCurrentView;
 
-fillUnitSelect('f-unit'); fillUnitSelect('g-unit'); fillUnitSelect('mp-unit');
+fillUnitSelect('f-unit'); fillUnitSelect('g-unit'); fillUnitSelect('mp-unit'); fillUnitSelect('quick-qty-unit');
 </script>
 </body>
 </html>
