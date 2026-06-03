@@ -844,7 +844,22 @@ window.inviteMember = async () => {
   document.getElementById('invite-email').value = '';
 };
 
-window.openModal = (id) => { document.getElementById(id)?.classList.add('open'); document.body.style.overflow = 'hidden'; };
+window.openModal = (id) => {
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Always start modals at the top. Without this, mobile browsers can keep
+  // the previous scroll position inside the modal after editing a long item.
+  const modal = overlay.querySelector('.modal');
+  overlay.scrollTop = 0;
+  if (modal) modal.scrollTop = 0;
+  requestAnimationFrame(() => {
+    overlay.scrollTop = 0;
+    if (modal) modal.scrollTop = 0;
+  });
+};
 window.closeModal = (id) => { document.getElementById(id)?.classList.remove('open'); document.body.style.overflow = ''; };
 document.querySelectorAll('.modal-overlay').forEach(overlay => overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); }));
 
