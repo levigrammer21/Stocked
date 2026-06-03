@@ -1202,7 +1202,6 @@ window.addToGroceryFromStock = async (collection, id, variantKey = '') => {
   const gRef = push(ref(db, `households/${householdId}/grocery`));
   await set(gRef, { name: item.name, variantName: variant?.name || '', category: item.category || '', quantity: variant?.quantity ?? item.quantity ?? 1, unit: variant?.unit || item.unit || '', store: variant?.retailer || item.retailer || '', price: variant?.price || item.price || '', checked: false, addedAt: Date.now(), fromCollection: collection, fromStockId: id });
   showToast(`${item.name}${variant ? ' — ' + variant.name : ''} added to grocery`);
-  switchTab('grocery');
 };
 
 window.openMoveToPantry = (groceryId) => {
