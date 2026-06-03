@@ -434,13 +434,56 @@ function getGroupedGroceryItems() {
   return Array.from(groups.values());
 }
 
-function hasPriceForGrocery(item) {
-  if (item.price) return true;
+function findPriceInfoForGrocery(item) {
+  const directPrice = parseFloat(item.price);
+  if (Number.isFinite(directPrice) && directPrice > 0) return { price: directPrice, pricePer: item.pricePer || 'item' };
   const allStock = [...Object.values(pantryItems), ...Object.values(householdItems), ...Object.values(animalItems)];
   const name = String(item.name || '').toLowerCase();
   const variant = String(item.variantName || '').toLowerCase();
-  return allStock.some(stock => String(stock.name || '').toLowerCase() === name && (stock.price || variantsArray(stock).some(v => (!variant || String(v.name || '').toLowerCase() === variant) && v.price)));
+  for (const stock of allStock) {
+    if (String(stock.name || '').toLowerCase() !== name) continue;
+    const variants = variantsArray(stock);
+    const matchingVariant = variants.find(v => (!variant || String(v.name || '').toLowerCase() === variant) && parseFloat(v.price) > 0);
+    if (matchingVariant) return { price: parseFloat(matchingVariant.price), pricePer: matchingVariant.pricePer || stock.pricePer || 'item' };
+    const stockPrice = parseFloat(stock.price);
+    if (Number.isFinite(stockPrice) && stockPrice > 0) return { price: stockPrice, pricePer: stock.pricePer || 'item' };
+  }
+  return null;
 }
+
+function hasPriceForGrocery(item) { return !!findPriceInfoForGrocery(item); }
+
+function groceryItemEstimate(item) {
+  const priceInfo = findPriceInfoForGrocery(item);
+  if (!priceInfo) return null;
+  const qty = parseFloat(item.quantity);
+  const multiplier = Number.isFinite(qty) && qty > 0 ? qty : 1;
+  return priceInfo.price * multiplier;
+}
+
+function groceryGroupEstimate(item) {
+  if (Array.isArray(item.rawItems) && item.rawItems.length) {
+    let total = 0;
+    let pricedCount = 0;
+    item.rawItems.forEach(raw => {
+      const est = groceryItemEstimate(raw);
+      if (est !== null) { total += est; pricedCount++; }
+    });
+    return pricedCount ? total : null;
+  }
+  return groceryItemEstimate(item);
+}
+
+function groceryTotals(items) {
+  return items.reduce((acc, item) => {
+    const est = groceryGroupEstimate(item);
+    if (est === null) acc.missing += Array.isArray(item.rawItems) ? item.rawItems.length : 1;
+    else acc.total += est;
+    return acc;
+  }, { total: 0, missing: 0 });
+}
+
+function formatMoney(value) { return `$${Number(value || 0).toFixed(2)}`; }
 
 window.renderGrocery = () => {
   const container = document.getElementById('grocery-list');
@@ -457,28 +500,33 @@ window.renderGrocery = () => {
     if (sort === 'added') return (b.addedAt || 0) - (a.addedAt || 0);
     return (a.store || 'No Store').localeCompare(b.store || 'No Store') || (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || '');
   });
+  const totals = groceryTotals(items);
+  const summaryHtml = `<div class="grocery-summary"><div class="grocery-summary-main"><span>Estimated grocery total</span><span>${formatMoney(totals.total)}</span></div><div class="grocery-summary-sub">${totals.missing ? `${totals.missing} item${totals.missing === 1 ? '' : 's'} missing price, so the real total may be higher.` : 'All visible grocery items have prices included.'}</div></div>`;
   if (sort === 'store-category') {
     const storeGroups = {};
     items.forEach(i => { const store = i.store || 'No Store'; if (!storeGroups[store]) storeGroups[store] = []; storeGroups[store].push(i); });
-    container.innerHTML = Object.entries(storeGroups).map(([store, storeItems]) => {
+    container.innerHTML = summaryHtml + Object.entries(storeGroups).map(([store, storeItems]) => {
       const cats = {};
+      const storeTotals = groceryTotals(storeItems);
       storeItems.forEach(i => { const cat = i.category || 'Other'; if (!cats[cat]) cats[cat] = []; cats[cat].push(i); });
-      return `<div class="store-group"><div class="store-label"><span>🏬 ${escHtml(store)}</span><span>${storeItems.length} item${storeItems.length === 1 ? '' : 's'}</span></div>${Object.entries(cats).map(([cat, catItems]) => `<div class="category-label">${getCategoryEmoji(cat)} ${escHtml(cat)}</div>${catItems.map(renderGroceryItem).join('')}`).join('')}</div>`;
+      return `<div class="store-group"><div class="store-label"><span>🏬 ${escHtml(store)}</span><span class="store-total"><span>${storeItems.length} item${storeItems.length === 1 ? '' : 's'}</span><span>${formatMoney(storeTotals.total)}</span>${storeTotals.missing ? `<span>$? ${storeTotals.missing}</span>` : ''}</span></div>${Object.entries(cats).map(([cat, catItems]) => `<div class="category-label">${getCategoryEmoji(cat)} ${escHtml(cat)}</div>${catItems.map(renderGroceryItem).join('')}`).join('')}</div>`;
     }).join('');
   } else {
     const unchecked = items.filter(i => !i.checked);
     const checked = items.filter(i => i.checked);
-    container.innerHTML = `${unchecked.length ? `<div class="category-group"><div class="category-label">To Get (${unchecked.length})</div>${unchecked.map(renderGroceryItem).join('')}</div>` : ''}${checked.length ? `<div class="category-group"><div class="category-label">✓ In Cart (${checked.length})</div>${checked.map(renderGroceryItem).join('')}</div>` : ''}`;
+    container.innerHTML = summaryHtml + `${unchecked.length ? `<div class="category-group"><div class="category-label">To Get (${unchecked.length})</div>${unchecked.map(renderGroceryItem).join('')}</div>` : ''}${checked.length ? `<div class="category-group"><div class="category-label">✓ In Cart (${checked.length})</div>${checked.map(renderGroceryItem).join('')}</div>` : ''}`;
   }
 };
 
 function renderGroceryItem(item) {
   const noPrice = !hasPriceForGrocery(item);
+  const estimate = groceryGroupEstimate(item);
   const qty = hasValue(item.quantity) ? `${Number(item.quantity)}${item.unit ? ' ' + item.unit : ''}` : '';
   const ids = item.ids || [item.id];
   const title = item.variantName ? `${item.name} — ${item.variantName}` : item.name;
-  return `<div class="grocery-item ${item.checked ? 'checked' : ''} ${noPrice ? 'no-price' : ''}"><div class="check-circle ${item.checked ? 'checked' : ''}" onclick="toggleGroceryCheck(${escAttr(JSON.stringify(ids))},${!!item.checked})">${item.checked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div><div class="grocery-info"><div class="grocery-name">${escHtml(title || '')}</div><div class="grocery-sub">${qty}${item.store ? ` · ${escHtml(item.store)}` : ''}${item.category ? ` · ${escHtml(item.category)}` : ''}${noPrice ? ' · $? Needs price' : ''}</div></div><div class="grocery-actions">${item.checked ? `<button class="btn-pantry-move" onclick="openMoveToPantry('${ids[0]}')" type="button">→ Stock</button>` : ''}<button class="btn-del-grocery" onclick="deleteGroceryItems(${escAttr(JSON.stringify(ids))})" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div></div>`;
+  return `<div class="grocery-item ${item.checked ? 'checked' : ''} ${noPrice ? 'no-price' : ''}"><div class="check-circle ${item.checked ? 'checked' : ''}" onclick="toggleGroceryCheck(${escAttr(JSON.stringify(ids))},${!!item.checked})">${item.checked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div><div class="grocery-info"><div class="grocery-name">${escHtml(title || '')}</div><div class="grocery-sub">${qty}${item.store ? ` · ${escHtml(item.store)}` : ''}${item.category ? ` · ${escHtml(item.category)}` : ''}${noPrice ? ' · $? Needs price' : ''}</div></div>${estimate !== null ? `<span class="price-chip">${formatMoney(estimate)}</span>` : ''}<div class="grocery-actions">${item.checked ? `<button class="btn-pantry-move" onclick="openMoveToPantry('${ids[0]}')" type="button">→ Stock</button>` : ''}<button class="btn-del-grocery" onclick="deleteGroceryItems(${escAttr(JSON.stringify(ids))})" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div></div>`;
 }
+
 
 window.toggleGroceryCheck = (ids, current) => { if (!Array.isArray(ids)) ids = [ids]; ids.forEach(id => update(ref(db, `households/${householdId}/grocery/${id}`), { checked: !current })); };
 window.deleteGroceryItems = (ids) => { if (!Array.isArray(ids)) ids = [ids]; ids.forEach(id => remove(ref(db, `households/${householdId}/grocery/${id}`))); };
@@ -496,9 +544,8 @@ window.addToGroceryFromStock = async (collection, id, variantKey = '') => {
   let variant = null;
   if (variantKey) variant = variantsArray(item).find(v => String(v.variantId || v.name) === String(variantKey));
   const gRef = push(ref(db, `households/${householdId}/grocery`));
-  await set(gRef, { name: item.name, variantName: variant?.name || '', category: item.category || '', quantity: variant?.quantity ?? item.quantity ?? 1, unit: variant?.unit || item.unit || '', store: variant?.retailer || item.retailer || '', price: variant?.price || item.price || '', checked: false, addedAt: Date.now(), fromCollection: collection, fromStockId: id });
+  await set(gRef, { name: item.name, variantName: variant?.name || '', category: item.category || '', quantity: variant?.quantity ?? item.quantity ?? 1, unit: variant?.unit || item.unit || '', store: variant?.retailer || item.retailer || '', price: variant?.price || item.price || '', pricePer: variant?.pricePer || item.pricePer || 'item', checked: false, addedAt: Date.now(), fromCollection: collection, fromStockId: id });
   showToast(`${item.name}${variant ? ' — ' + variant.name : ''} added to grocery`);
-  switchTab('grocery');
 };
 
 window.openMoveToPantry = (groceryId) => {
@@ -804,7 +851,7 @@ window.saveGroceryItem = async () => {
   const store = document.getElementById('g-store').value.trim();
   await rememberRetailer(store);
   const gRef = push(ref(db, `households/${householdId}/grocery`));
-  await set(gRef, { name, variantName: document.getElementById('g-variant').value.trim(), category, quantity: parseNonNegativeNumber(document.getElementById('g-qty').value, 1), unit: document.getElementById('g-unit').value || '', store, price: parseNonNegativeNumber(document.getElementById('g-price').value, ''), checked: false, addedAt: Date.now() });
+  await set(gRef, { name, variantName: document.getElementById('g-variant').value.trim(), category, quantity: parseNonNegativeNumber(document.getElementById('g-qty').value, 1), unit: document.getElementById('g-unit').value || '', store, price: parseNonNegativeNumber(document.getElementById('g-price').value, ''), pricePer: 'item', checked: false, addedAt: Date.now() });
   showToast(`${name} added to grocery list`);
   closeModal('modal-grocery');
 };
