@@ -361,23 +361,41 @@ function foodStockEntries(){
 }
 function ingredientKey(i){return `${i.collection}:${i.stockId}:${i.variantName||''}`;}
 function ingredientBaseName(i){return String(i.variantName||i.parentName||i.name||'').replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim();}
-function ingredientKind(e){
-  const t=`${e.name} ${e.parentName||''} ${e.category||''}`.toLowerCase();
-  if(/baking powder|baking soda|yeast|cornstarch|gelatin|pectin/.test(t))return'leavening';
-  if(/sugar|syrup|honey|molasses|chocolate|cocoa|frosting|jam|jelly/.test(t))return'sweetener';
-  if(/vinegar|lemon juice|lime juice|pickle/.test(t))return'acid';
-  if(/chicken|beef|steak|venison|backstrap|pork|turkey|fish|salmon|tuna|egg|tofu|beans|lentil|sausage|bacon|shrimp|ham/.test(t))return'protein';
-  if(/rice|pasta|noodle|bread|tortilla|potato|grain|oat|bun|wrap|quinoa|macaroni|spaghetti|bagel|cereal/.test(t))return'carb';
-  if(/cheese|milk|cream|yogurt|butter|sour cream|alfredo|cottage cheese/.test(t))return'dairy';
-  if(/sauce|salsa|soy|hot|bbq|marinara|pesto|dressing|condiment|spice|season|ranch|bouillon|broth|stock|base/.test(t))return'sauce';
-  if(/blueberry|strawberry|banana|apple|fruit|peach|berry|grape|raisin/.test(t))return'fruit';
-  if(/produce|vegetable|onion|pepper|corn|tomato|spinach|lettuce|broccoli|carrot|pea|jalapeno|mushroom|zucchini|potato/.test(t))return'veg';
-  if(/chip|cracker|pretzel|popcorn|nuts|trail mix/.test(t))return'snack';
-  if(/flour|cake|muffin|brownie|cookie|baking|mix/.test(t))return'baking';
-  return'other';
+function textForIngredient(e){return `${e.name||''} ${e.parentName||''} ${e.variantName||''} ${e.category||''}`.toLowerCase();}
+function hasAnyText(t,words){return words.some(w=>t.includes(w));}
+function ingredientKind(e){return ingredientProfile(e).role;}
+function ingredientProfile(e){
+  const t=textForIngredient(e);
+  const profile={role:'other',family:'general',sweet:false,savory:true,staple:false,ingredient:true};
+  if(hasAnyText(t,['baking powder','baking soda','yeast','cornstarch','gelatin','pectin']))return{...profile,role:'technical',family:'baking_helper',savory:false,ingredient:false};
+  if(hasAnyText(t,['salt','pepper','garlic powder','onion powder','paprika','cumin','chili powder','italian seasoning','seasoning','spice','bay leaves','bay leaf','oregano','thyme','rosemary','basil','parsley','sage']))return{...profile,role:'seasoning',family:'seasoning',staple:true};
+  if(hasAnyText(t,['vinegar','apple cider vinegar','lemon juice','lime juice','pickle juice']))return{...profile,role:'acid',family:'acid',staple:true};
+  if(hasAnyText(t,['olive oil','oil','butter','ghee','lard','shortening']))return{...profile,role:'fat',family:'fat',staple:true};
+  if(hasAnyText(t,['venison','backstrap','deer','elk','beef','steak','roast','ground beef','hamburger']))return{...profile,role:'protein',family:'red_meat'};
+  if(hasAnyText(t,['chicken','turkey','duck']))return{...profile,role:'protein',family:'poultry'};
+  if(hasAnyText(t,['pork','ham','bacon','sausage']))return{...profile,role:'protein',family:'pork'};
+  if(hasAnyText(t,['fish','salmon','tuna','shrimp','crab']))return{...profile,role:'protein',family:'seafood'};
+  if(hasAnyText(t,['egg','eggs']))return{...profile,role:'protein',family:'egg'};
+  if(hasAnyText(t,['beans','lentil','chickpea','tofu']))return{...profile,role:'protein',family:'plant_protein'};
+  if(hasAnyText(t,['broth','stock','bouillon','better than bouillon','base']))return{...profile,role:'liquid_savory',family:'broth',staple:true};
+  if(hasAnyText(t,['soy sauce','teriyaki','worcestershire','bbq','barbecue','hot sauce','salsa','marinara','pesto','ranch','dressing','mustard','ketchup','mayo','mayonnaise','alfredo']))return{...profile,role:'sauce',family:'sauce'};
+  if(hasAnyText(t,['cheddar','mozzarella','parmesan','cheese','cream cheese']))return{...profile,role:'dairy',family:'cheese'};
+  if(hasAnyText(t,['milk','cream','half and half','sour cream','yogurt','cottage cheese']))return{...profile,role:'dairy',family:'soft_dairy'};
+  if(hasAnyText(t,['rice','quinoa','couscous','barley']))return{...profile,role:'carb',family:'grain'};
+  if(hasAnyText(t,['pasta','noodle','macaroni','spaghetti','ramen']))return{...profile,role:'carb',family:'pasta'};
+  if(hasAnyText(t,['potato','potatoes','hash brown','tater']))return{...profile,role:'carb',family:'potato'};
+  if(hasAnyText(t,['tortilla','wrap','taco shell','bread','bun','roll']))return{...profile,role:'carb',family:'bread'};
+  if(hasAnyText(t,['bagel','blueberry bagel','cinnamon raisin bagel']))return{...profile,role:'carb',family:'sweet_bread',sweet:true,savory:!hasAnyText(t,['blueberry','cinnamon','raisin'])};
+  if(hasAnyText(t,['oat','oatmeal','cereal','granola']))return{...profile,role:'carb',family:'breakfast_grain',sweet:true};
+  if(hasAnyText(t,['flour','cornmeal','pancake mix','cake mix','muffin mix','brownie mix']))return{...profile,role:'baking_base',family:'baking_base',sweet:true,savory:false};
+  if(hasAnyText(t,['blueberry','strawberry','banana','apple','peach','pear','grape','berry','fruit','raisin','cranberry','pineapple']))return{...profile,role:'fruit',family:'fruit',sweet:true,savory:false};
+  if(hasAnyText(t,['onion','garlic','shallot','green onion','scallion','mushroom','pepper','jalapeno','tomato','corn','spinach','lettuce','broccoli','carrot','pea','zucchini','green bean','cabbage','vegetable','produce']))return{...profile,role:'veg',family:'veg'};
+  if(hasAnyText(t,['sugar','brown sugar','honey','syrup','maple','molasses','jam','jelly','chocolate','cocoa','frosting']))return{...profile,role:'sweetener',family:'sweetener',sweet:true,savory:false};
+  if(hasAnyText(t,['chip','chips','cracker','pretzel','popcorn','nuts','trail mix']))return{...profile,role:'snack',family:'snack'};
+  return profile;
 }
 function mealPriority(e){let score=0;if(e.needsUse)score+=8;if(getExpStatus(e.expiration)==='expired')score+=6;if(getExpStatus(e.expiration)==='expiring')score+=7;if(e.runningLow)score-=1;return score;}
-function mealIngredients(){return foodStockEntries().sort((a,b)=>mealPriority(b)-mealPriority(a)||a.name.localeCompare(b.name));}
+function mealIngredients(){return foodStockEntries().filter(i=>ingredientProfile(i).ingredient!==false).sort((a,b)=>mealPriority(b)-mealPriority(a)||a.name.localeCompare(b.name));}
 function mealSearchText(i){return `${i.name} ${i.parentName} ${i.variantName||''} ${i.category||''} ${i.location||''}`.toLowerCase();}
 function savedMealSearchText(m){return `${m.name||''} ${(m.usedIngredients||[]).join(' ')} ${(m.missing||[]).join(' ')} ${m.mode||''} ${m.flavor||''}`.toLowerCase();}
 function renderMeals(){
@@ -401,57 +419,69 @@ window.setMealMode=(mode)=>{mealMode=mode;currentMealIdea=null;renderMeals();};
 window.setMealFlavor=(flavor)=>{mealFlavor=flavor;currentMealIdea=null;renderMeals();};
 window.toggleMealIngredient=(key)=>{if(selectedMealIds.has(key))selectedMealIds.delete(key);else{if(selectedMealIds.size>=2)selectedMealIds.delete([...selectedMealIds][0]);selectedMealIds.add(key);}currentMealIdea=null;renderMeals();};
 function pickOne(arr){return arr[Math.floor(Math.random()*arr.length)];}
-function suitabilityScore(item,anchors=[]){
-  const kind=ingredientKind(item);const t=mealSearchText(item);let score=mealPriority(item);
-  if(anchors.some(a=>ingredientKey(a)===ingredientKey(item)))return 999;
-  if(mealFlavor==='savory'){
-    if(['protein','carb','veg','dairy','sauce'].includes(kind))score+=8;
-    if(['sweetener','leavening','baking','fruit'].includes(kind))score-=20;
-    if(kind==='acid')score-=6;
-  }else{
-    if(['fruit','dairy','carb','sweetener','baking'].includes(kind))score+=8;
-    if(['protein','sauce','acid'].includes(kind))score-=12;
-    if(/egg|milk|butter|yogurt|oat|bagel|bread/.test(t))score+=5;
+function roleAllowedForMode(role){
+  if(mealFlavor==='sweet')return ['fruit','dairy','carb','sweetener','baking_base','fat','seasoning'].includes(role);
+  if(role==='technical'||role==='sweetener'||role==='baking_base')return false;
+  if(role==='fruit')return mealMode==='breakfast'||mealMode==='snack';
+  if(mealMode==='snack')return ['snack','dairy','fruit','carb','sauce','veg','protein','fat','seasoning'].includes(role);
+  return ['protein','carb','veg','dairy','sauce','liquid_savory','acid','fat','seasoning','snack'].includes(role);
+}
+function anchorAllowedForCurrentPrefs(item){
+  const p=ingredientProfile(item);
+  if(mealFlavor==='sweet')return p.sweet || ['fruit','sweetener','baking_base','carb','dairy'].includes(p.role);
+  if(!p.savory && !['carb','dairy'].includes(p.role))return false;
+  if(mealMode==='breakfast')return !['technical','acid'].includes(p.role);
+  return ['protein','carb','veg','dairy','snack','sauce','fruit'].includes(p.role);
+}
+function compatibilityScore(candidate,anchors=[]){
+  const c=ingredientProfile(candidate);if(!roleAllowedForMode(c.role))return -999;
+  if(anchors.some(a=>ingredientKey(a)===ingredientKey(candidate)))return 999;
+  let score=mealPriority(candidate);
+  if(c.staple)score+=1;
+  for(const anchor of anchors){
+    const a=ingredientProfile(anchor);
+    if(a.family==='red_meat'){
+      if(['veg','carb','sauce','liquid_savory','fat','seasoning','acid'].includes(c.role))score+=16;
+      if(['fruit','sweetener','baking_base','snack'].includes(c.role)||c.family==='sweet_bread')score-=80;
+      if(c.family==='soft_dairy')score-=15;
+    } else if(a.family==='poultry'||a.family==='pork'||a.family==='seafood'||a.family==='plant_protein'){
+      if(['veg','carb','sauce','liquid_savory','fat','seasoning','acid','dairy'].includes(c.role))score+=14;
+      if(['fruit','sweetener','baking_base'].includes(c.role)||c.family==='sweet_bread')score-=60;
+    } else if(a.family==='sweet_bread'||a.role==='fruit'||a.family==='breakfast_grain'){
+      if(['dairy','fruit','sweetener','fat','seasoning'].includes(c.role)||c.family==='egg')score+=16;
+      if(['protein','liquid_savory','sauce','veg'].includes(c.role)&&!['egg'].includes(c.family))score-=70;
+    } else if(a.family==='grain'||a.family==='pasta'||a.family==='potato'||a.family==='bread'){
+      if(['protein','veg','dairy','sauce','fat','seasoning','liquid_savory'].includes(c.role))score+=12;
+      if(['sweetener','baking_base','technical'].includes(c.role))score-=50;
+    } else if(a.role==='dairy'){
+      if(['carb','fruit','protein','veg','sweetener','seasoning','fat'].includes(c.role))score+=8;
+    } else if(a.role==='snack'){
+      if(['dairy','sauce','protein','veg','fruit'].includes(c.role))score+=8;
+      if(['technical','liquid_savory'].includes(c.role))score-=50;
+    }
   }
-  if(mealMode==='breakfast'){
-    if(/egg|bacon|sausage|ham|oat|cereal|yogurt|bagel|bread|fruit|milk|cheese|potato/.test(t))score+=12;
-    if(kind==='protein'&&!/egg|bacon|sausage|ham/.test(t))score-=8;
-  }
-  if(mealMode==='lunch'){if(['protein','carb','veg','dairy','sauce','snack'].includes(kind))score+=5;if(kind==='leavening')score-=15;}
-  if(mealMode==='dinner'){if(['protein','carb','veg','dairy','sauce'].includes(kind))score+=7;if(['leavening','sweetener'].includes(kind))score-=18;}
-  if(mealMode==='snack'){if(['snack','fruit','dairy','carb','sweetener'].includes(kind))score+=12;if(kind==='protein')score-=3;if(kind==='leavening')score-=15;}
-  for(const a of anchors){
-    const ak=ingredientKind(a);
-    if(ak==='protein'&&['carb','veg','sauce','dairy'].includes(kind))score+=10;
-    if(ak==='carb'&&['protein','veg','dairy','sauce','fruit'].includes(kind))score+=8;
-    if(ak==='fruit'&&['dairy','carb','sweetener'].includes(kind))score+=10;
-    if(ak==='snack'&&['dairy','sauce','protein','fruit'].includes(kind))score+=7;
-    if(ak==='dairy'&&['carb','fruit','protein','veg'].includes(kind))score+=7;
-  }
+  if(mealMode==='breakfast'&&['fruit','dairy','carb'].includes(c.role))score+=5;
+  if(mealMode==='dinner'&&['protein','carb','veg'].includes(c.role))score+=5;
+  if(mealFlavor==='savory'&&c.sweet&&!c.savory)score-=40;
+  if(mealFlavor==='sweet'&&!c.sweet&&c.role!=='fat'&&c.role!=='seasoning')score-=40;
   return score;
 }
 function chooseMealBaseForSurprise(all){
-  const candidates=all.filter(i=>suitabilityScore(i,[])>-5);
-  const pool=(candidates.length?candidates:all).slice().sort((a,b)=>suitabilityScore(b,[])-suitabilityScore(a,[]));
-  const first=pickOne(pool.slice(0,Math.min(pool.length,8)));
-  const second=pool.find(i=>ingredientKey(i)!==ingredientKey(first)&&suitabilityScore(i,[first])>0&&ingredientKind(i)!==ingredientKind(first));
-  return second?[first,second]:[first];
+  const pool=all.filter(anchorAllowedForCurrentPrefs).sort((a,b)=>mealPriority(b)-mealPriority(a)||compatibilityScore(b,[])-compatibilityScore(a,[]));
+  const top=(pool.length?pool:all).slice(0,Math.min(10,(pool.length||all.length)));
+  return [pickOne(top)];
 }
 function chooseSupportingIngredients(all,anchors){
   const chosen=[...anchors.map(a=>({...a,mealAnchor:true}))];
-  const wanted=mealFlavor==='sweet'
-    ? (mealMode==='snack'?['fruit','dairy','carb','sweetener']:['carb','fruit','dairy','sweetener','baking'])
-    : (mealMode==='snack'?['snack','dairy','fruit','sauce','protein']:['protein','carb','veg','sauce','dairy']);
-  for(const kind of wanted){
+  const targetRoles=mealFlavor==='sweet'
+    ? (mealMode==='snack'?['dairy','fruit','sweetener','fat','seasoning']:['dairy','fruit','sweetener','fat','seasoning'])
+    : (mealMode==='snack'?['dairy','sauce','veg','fruit','protein']:['carb','veg','sauce','liquid_savory','dairy','fat','seasoning']);
+  for(const role of targetRoles){
     if(chosen.length>=5)break;
-    if(chosen.some(i=>ingredientKind(i)===kind))continue;
-    const candidate=all.filter(i=>!chosen.some(x=>ingredientKey(x)===ingredientKey(i))&&ingredientKind(i)===kind).sort((a,b)=>suitabilityScore(b,anchors)-suitabilityScore(a,anchors))[0];
-    if(candidate&&suitabilityScore(candidate,anchors)>-2)chosen.push(candidate);
-  }
-  while(chosen.length<3&&chosen.length<all.length){
-    const candidate=all.filter(i=>!chosen.some(x=>ingredientKey(x)===ingredientKey(i))).sort((a,b)=>suitabilityScore(b,anchors)-suitabilityScore(a,anchors))[0];
-    if(!candidate||suitabilityScore(candidate,anchors)<-8)break;
-    chosen.push(candidate);
+    if(chosen.some(i=>ingredientProfile(i).role===role))continue;
+    const candidates=all.filter(i=>!chosen.some(x=>ingredientKey(x)===ingredientKey(i))&&ingredientProfile(i).role===role).sort((a,b)=>compatibilityScore(b,anchors)-compatibilityScore(a,anchors));
+    const c=candidates[0];
+    if(c&&compatibilityScore(c,anchors)>=8)chosen.push(c);
   }
   return chosen;
 }
@@ -461,54 +491,85 @@ window.generateMealIdea=(mode='surprise')=>{
   if(mode==='selected'){
     anchors=all.filter(i=>selectedMealIds.has(ingredientKey(i)));
     if(!anchors.length){showToast('Select 1 or 2 ingredients first');return;}
+    const bad=anchors.find(a=>!anchorAllowedForCurrentPrefs(a));
+    if(bad){showToast(`${bad.name} does not fit ${mealFlavor} ${mealMode}. Try changing the meal type/flavor.`);return;}
   } else anchors=chooseMealBaseForSurprise(all);
   const chosen=chooseSupportingIngredients(all,anchors);
-  const profile=chooseMealProfile(chosen,anchors), missing=suggestMissingForProfile(profile,chosen), name=makeMealName(profile,chosen,anchors);
-  const why=mode==='selected'?`Built around ${anchors.map(i=>i.name).join(' + ')} as a ${mealFlavor} ${mealMode}.`:(chosen.some(i=>i.needsUse||getExpStatus(i.expiration)==='expiring')?`Surprise ${mealFlavor} ${mealMode} prioritizing expiring or needs-use items.`:`Surprise ${mealFlavor} ${mealMode} using items already in your pantry.`);
+  const profile=chooseMealProfile(chosen,anchors), missing=suggestMissingForProfile(profile,chosen,anchors), name=makeMealName(profile,chosen,anchors);
+  const why=mode==='selected'?`Built around ${anchors.map(i=>i.name).join(' + ')} as the main ingredient for a ${mealFlavor} ${mealMode}.`:`Surprise ${mealFlavor} ${mealMode} anchored on ${anchors.map(i=>i.name).join(' + ')}.`;
   currentMealIdea={id:'idea_'+Date.now(),name,profile,mode:mealMode,flavor:mealFlavor,why,used:chosen,usedIngredients:chosen.map(i=>i.name),missing,instructions:makeInstructions(profile,chosen,missing,anchors),createdAt:Date.now(),saved:false};
   renderMeals();
 };
 function chooseMealProfile(items,anchors=[]){
-  const has=k=>items.some(i=>ingredientKind(i)===k);const anchor=anchors[0]||items[0];const ak=ingredientKind(anchor);
+  const a=ingredientProfile(anchors[0]||items[0]||{});
+  const has=role=>items.some(i=>ingredientProfile(i).role===role);
   if(mealFlavor==='sweet'){
-    if(mealMode==='breakfast')return has('dairy')?pickOne(['breakfast parfait','sweet breakfast bowl','yogurt bowl']):pickOne(['sweet toast','breakfast bake']);
-    if(mealMode==='snack')return pickOne(['sweet snack plate','fruit dip plate','quick sweet bites']);
-    return pickOne(['simple dessert bowl','sweet bake','fruit crumble']);
+    if(mealMode==='breakfast')return a.family==='sweet_bread'?'french toast style breakfast':has('dairy')?'parfait bowl':'sweet breakfast bowl';
+    if(mealMode==='snack')return 'sweet snack plate';
+    return has('dairy')?'dessert bowl':'simple sweet bake';
   }
-  if(mealMode==='breakfast')return pickOne(['breakfast skillet','savory breakfast bowl','breakfast wrap']);
-  if(mealMode==='snack')return pickOne(['savory snack plate','loaded bites','quick dip plate']);
-  if(ak==='protein')return has('carb')?pickOne(['dinner skillet','rice bowl','loaded wraps','pantry tacos']):pickOne(['sheet pan dinner','protein skillet','savory plate']);
-  if(has('carb')&&has('protein')&&has('sauce'))return pickOne(['rice bowl','skillet','stir fry','wraps']);
-  if(has('carb')&&has('dairy'))return pickOne(['bake','creamy pasta','melts']);
-  if(has('protein')&&has('veg'))return pickOne(['sheet pan','salad bowls','skillet']);
-  if(has('carb'))return pickOne(['loaded bowls','quick tacos','comfort bake']);
-  return pickOne(['pantry hash','loaded bowls','skillet']);
+  if(mealMode==='breakfast')return a.family==='egg'?'breakfast scramble':'savory breakfast plate';
+  if(mealMode==='snack')return 'savory snack plate';
+  if(a.role==='protein')return has('carb')&&has('veg')?'complete dinner plate':has('carb')?'protein grain bowl':has('veg')?'protein and vegetables':'simple seared protein';
+  if(a.role==='carb')return has('protein')?'loaded grain bowl':has('dairy')?'creamy carb bake':'seasoned pantry bowl';
+  if(a.role==='veg')return has('protein')?'vegetable protein skillet':'vegetable skillet';
+  if(a.role==='dairy')return has('carb')?'creamy pantry bake':'savory dairy bowl';
+  return 'pantry meal';
 }
-function mainIngredient(items,kind){return items.find(i=>ingredientKind(i)===kind)||items[0];}
+function primaryAnchor(anchors,items){return anchors[0]||items.find(i=>i.mealAnchor)||items[0];}
 function makeMealName(profile,items,anchors=[]){
-  const anchor=anchors[0]||items.find(i=>i.mealAnchor)||items[0];const a=ingredientBaseName(anchor);
-  const p=mainIngredient(items,'protein'), c=mainIngredient(items,'carb'), v=mainIngredient(items,'veg'), f=mainIngredient(items,'fruit'), d=mainIngredient(items,'dairy');
+  const anchor=primaryAnchor(anchors,items);const a=ingredientBaseName(anchor);
   if(mealFlavor==='sweet'){
-    if(profile.includes('parfait')||profile.includes('yogurt'))return `${a} ${d?.name||'Yogurt'} Parfait`;
+    if(profile.includes('french toast'))return `${a} French Toast`;
+    if(profile.includes('parfait'))return `${a} Parfait Bowl`;
     if(profile.includes('snack'))return `${a} Sweet Snack Plate`;
-    if(profile.includes('bake'))return `${a} Breakfast Bake`;
-    if(profile.includes('crumble'))return `${a} Fruit Crumble`;
+    if(profile.includes('bake'))return `${a} Sweet Bake`;
     return `${a} Sweet Bowl`;
   }
-  if(profile.includes('breakfast'))return `${a} Savory Breakfast`;
+  const ap=ingredientProfile(anchor);
+  if(profile.includes('seared')||profile.includes('protein'))return `${a} with Pantry Sides`;
+  if(profile.includes('dinner plate'))return `${a} Dinner Plate`;
+  if(profile.includes('grain bowl'))return `${a} Grain Bowl`;
+  if(profile.includes('breakfast'))return `${a} Breakfast Plate`;
   if(profile.includes('snack'))return `${a} Snack Plate`;
-  if(profile.includes('rice'))return `${a} ${c?.name||'Rice'} Bowl`;
-  if(profile.includes('stir'))return `${a} Stir Fry`;
-  if(profile.includes('wrap')||profile.includes('taco'))return `${a} ${v?.name||c?.name||''} Wraps`.replace('  ',' ');
-  if(profile.includes('pasta'))return `Creamy ${a} Pasta`;
-  if(profile.includes('bake'))return `${a} ${c?.name||''} Bake`.replace('  ',' ');
-  if(profile.includes('sheet'))return `Sheet Pan ${a} & ${v?.name||c?.name||'Sides'}`;
-  if(profile.includes('skillet'))return `${a} Dinner Skillet`;
+  if(profile.includes('skillet'))return `${a} Skillet`;
+  if(profile.includes('bake'))return `${a} Bake`;
   return `${a} ${profile.replace(/^./,m=>m.toUpperCase())}`;
 }
 function hasTerm(items,terms){return items.some(i=>terms.some(t=>i.name.toLowerCase().includes(t)));}
-function suggestMissingForProfile(profile,items){const miss=[];if(mealFlavor==='sweet'){if(!hasTerm(items,['vanilla','cinnamon']))miss.push('vanilla or cinnamon');if(!hasTerm(items,['cream','yogurt','milk']))miss.push('cream, yogurt, or milk');return miss.slice(0,3);}if(!hasTerm(items,['onion','garlic']))miss.push('onion or garlic');if(/stir fry|rice bowl/.test(profile)&&!hasTerm(items,['soy','teriyaki']))miss.push('soy sauce');if(/wrap|taco/.test(profile)&&!hasTerm(items,['salsa','tortilla','wrap']))miss.push('salsa or tortillas');if(/creamy|bake|melts/.test(profile)&&!hasTerm(items,['cheese','cream','milk']))miss.push('cheese or cream');return miss.slice(0,3);}
-function makeInstructions(profile,items,missing,anchors=[]){const anchorNames=anchors.length?anchors.map(i=>i.name).join(' and '):items[0]?.name;const support=items.filter(i=>!anchors.some(a=>ingredientKey(a)===ingredientKey(i))).map(i=>i.name);if(mealFlavor==='sweet')return[`Start with ${anchorNames} as the main flavor.`,`Add ${support.slice(0,3).join(', ')||'a simple pantry pairing'} to build texture and balance.`,`Sweeten or season lightly${missing.length?` — ${missing[0]} would help if you have it.`:'.'}`,`Serve as a ${mealMode} ${profile}.`];return[`Make ${anchorNames} the main ingredient, not just a side note.`,`Use ${support.slice(0,3).join(', ')||'a simple pantry side'} to turn it into a complete ${mealMode}.`,`Season to taste${missing.length?` — ${missing[0]} would make it better, but it is optional.`:'.'}`,`Serve as a ${profile}; save leftovers if you have enough.`];}
+function suggestMissingForProfile(profile,items,anchors=[]){
+  const miss=[];const anchor=primaryAnchor(anchors,items);const ap=ingredientProfile(anchor||{});
+  if(mealFlavor==='sweet'){
+    if(!hasTerm(items,['egg','eggs'])&&profile.includes('french toast'))miss.push('eggs');
+    if(!hasTerm(items,['milk','cream','yogurt']))miss.push('milk, cream, or yogurt');
+    if(!hasTerm(items,['cinnamon','vanilla']))miss.push('cinnamon or vanilla');
+    return miss.slice(0,3);
+  }
+  if(ap.family==='red_meat'){
+    if(!hasTerm(items,['garlic','onion']))miss.push('garlic or onion');
+    if(!hasTerm(items,['butter','oil']))miss.push('butter or oil');
+    if(!hasTerm(items,['potato','rice','green bean','mushroom','broccoli']))miss.push('potatoes, rice, mushrooms, or green beans');
+    return miss.slice(0,3);
+  }
+  if(!hasTerm(items,['garlic','onion']))miss.push('garlic or onion');
+  if(!hasTerm(items,['oil','butter']))miss.push('oil or butter');
+  if(profile.includes('grain')&&!hasTerm(items,['rice','potato','pasta','bread','tortilla']))miss.push('rice, potatoes, pasta, or tortillas');
+  if(profile.includes('creamy')&&!hasTerm(items,['cheese','cream','milk']))miss.push('cheese or cream');
+  return miss.slice(0,3);
+}
+function makeInstructions(profile,items,missing,anchors=[]){
+  const anchor=primaryAnchor(anchors,items);const anchorName=anchor?.name||'the anchor ingredient';
+  const supports=items.filter(i=>!anchors.some(a=>ingredientKey(a)===ingredientKey(i))&&!ingredientProfile(i).staple).map(i=>i.name);
+  const staples=items.filter(i=>ingredientProfile(i).staple).map(i=>i.name);
+  if(mealFlavor==='sweet'){
+    if(profile.includes('french toast'))return[`Slice or halve ${anchorName}.`,`Whisk eggs with milk${missing.includes('cinnamon or vanilla')?' if available, add cinnamon or vanilla':''}.`,`Dip the bagel pieces and cook in butter until golden on both sides.`,`Serve with ${supports.join(', ')||'fruit, yogurt, syrup, or powdered sugar if you have it'}.`];
+    return[`Make ${anchorName} the main sweet ingredient.`,`Pair it with ${supports.join(', ')||'a creamy or fruity pantry item'}.`,`Add a little sweetness or spice${missing.length?` — ${missing[0]} would help.`:'.'}`,`Serve as a ${mealMode} ${profile}.`];
+  }
+  const ap=ingredientProfile(anchor||{});
+  if(ap.family==='red_meat')return[`Pat ${anchorName} dry and season well${staples.length?` with ${staples.slice(0,2).join(' and ')}`:''}.`,`Sear hot and fast, then rest it so it stays tender.`,`Use ${supports.join(', ')||'a simple vegetable or starch'} as the side, not as random filler.`,`Finish with butter, pan juices, broth, or a simple sauce if available.`];
+  if(ap.role==='protein')return[`Season ${anchorName} and cook it first until done.`,`Build the plate with ${supports.join(', ')||'a compatible starch or vegetable'}.`,`Add sauce or seasoning${missing.length?` — ${missing[0]} would improve it.`:'.'}`,`Serve as a ${mealMode} ${profile}.`];
+  return[`Start with ${anchorName} as the main ingredient.`,`Add ${supports.join(', ')||'only compatible pantry items'} to make it complete.`,`Season and adjust texture${missing.length?` — ${missing[0]} would help.`:'.'}`,`Serve as a ${mealMode} ${profile}.`];
+}
 function renderMealIdeaCard(meal){return`<div class="meal-card"><div class="meal-title">${escHtml(meal.name)}</div><div class="meal-sub">${escHtml(meal.why||'Live idea using your current stock.')}</div><div class="meal-section"><h4>Uses From Stock</h4><div class="meal-list">${(meal.used||[]).map(i=>`<div class="meal-line used">✓ ${escHtml(i.name)}${i.mealAnchor?' · anchor':''}${i.expiration?` · exp. ${escHtml(i.expiration)}`:''}</div>`).join('')}</div></div>${meal.missing?.length?`<div class="meal-section"><h4>Would Improve It</h4><div class="meal-list">${meal.missing.map(m=>`<div class="meal-line missing">＋ ${escHtml(m)}</div>`).join('')}</div></div>`:''}<div class="meal-section"><h4>Simple Plan</h4><div class="meal-list">${(meal.instructions||[]).map(s=>`<div class="meal-line">${escHtml(s)}</div>`).join('')}</div></div><div class="detail-actions"><button class="btn-sm btn-grocery" onclick="saveCurrentMealIdea()" type="button">❤️ Save Meal</button><button class="btn-sm btn-edit" onclick="addMealMissingToGrocery()" type="button">🛒 Add Missing</button><button class="btn-sm btn-low" onclick="cookCurrentMeal()" type="button">✓ Cooked It</button></div></div>`;}
 function renderSavedMealRow(meal){const readiness=mealReadiness(meal);return`<div class="saved-meal-row"><div><div class="saved-meal-name">${escHtml(meal.name)}</div><div class="saved-meal-meta">${readiness.ready?'Ready now':`Missing ${readiness.missing.length}`} · ${meal.usedIngredients?.length||0} ingredients</div></div><div style="display:flex;gap:6px"><button class="tiny-action" onclick="loadSavedMeal('${meal.id}')" type="button">Open</button><button class="tiny-action" onclick="deleteSavedMeal('${meal.id}')" type="button">Delete</button></div></div>`;}
 function mealReadiness(meal){const have=foodStockEntries().map(i=>i.name.toLowerCase());const missing=(meal.usedIngredients||[]).filter(n=>!have.some(h=>h.includes(String(n).toLowerCase().split(' (')[0])));return{ready:missing.length===0,missing};}
