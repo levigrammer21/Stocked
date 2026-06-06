@@ -91,6 +91,8 @@
   .meal-btn{border:none;border-radius:var(--radius-sm);padding:12px 10px;font-weight:900;font-size:13px;cursor:pointer;background:var(--ink);color:white;} .meal-btn.light{background:white;color:var(--ink);border:1.5px solid var(--cream-darker);}
   .ingredient-picker{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;scrollbar-width:none;} .ingredient-picker::-webkit-scrollbar{display:none;}
   .ingredient-chip{flex-shrink:0;border:1.5px solid var(--cream-darker);background:white;color:var(--ink-soft);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;} .ingredient-chip.selected{background:var(--ink);color:white;border-color:var(--ink);}
+  .meal-pref-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin:8px 0 12px;scrollbar-width:none;} .meal-pref-row::-webkit-scrollbar{display:none;}
+  .meal-pref-chip{flex-shrink:0;border:1.5px solid var(--cream-darker);background:white;color:var(--ink-soft);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;cursor:pointer;} .meal-pref-chip.selected{background:var(--ink);color:white;border-color:var(--ink);}
   .meal-card{background:white;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border:1.5px solid var(--cream-darker);margin-bottom:14px;}
   .meal-title{font-family:'DM Serif Display',serif;font-size:25px;margin-bottom:5px;} .meal-sub{font-size:13px;color:var(--stone);line-height:1.45;margin-bottom:12px;}
   .meal-section{margin-top:12px;} .meal-section h4{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--stone);margin-bottom:7px;}
@@ -162,7 +164,7 @@ import { getDatabase, ref, push, set, remove, onValue, update, get } from "https
 const firebaseConfig = { apiKey:"AIzaSyAJlfW-prbW2aZOKz9sySl4Mt6OTEMELEk", authDomain:"stocked-28446.firebaseapp.com", projectId:"stocked-28446", storageBucket:"stocked-28446.firebasestorage.app", messagingSenderId:"890037002917", appId:"1:890037002917:web:5e8372134365b637f2e34c" };
 const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getDatabase(app);
 let currentUser=null, householdId=null, pantryItems={}, householdItems={}, animalItems={}, groceryItems={}, householdMembers={}, settings={}, savedMeals={}, unsubscribeCallbacks=[];
-let currentTab='home', filters={pantry:'all',household:'all',animals:'all'}, groceryFilter='all', editingItemId=null, editingCollection='pantry', movingGroceryId=null, currentRecipeLinks=[], currentVariants=[], autofillData=null, moveAutofillData=null, itemIconImageData='', locationTouched=false, activePopover=null, draggedStock=null, quickQtyTarget=null, selectedMealIds=new Set(), currentMealIdea=null, categoryFocus=null, cropImageObj=null, cropDrag=null;
+let currentTab='home', filters={pantry:'all',household:'all',animals:'all'}, groceryFilter='all', editingItemId=null, editingCollection='pantry', movingGroceryId=null, currentRecipeLinks=[], currentVariants=[], autofillData=null, moveAutofillData=null, itemIconImageData='', locationTouched=false, activePopover=null, draggedStock=null, quickQtyTarget=null, selectedMealIds=new Set(), currentMealIdea=null, mealMode='dinner', mealFlavor='savory', categoryFocus=null, cropImageObj=null, cropDrag=null;
 const UNITS=['','oz','lb','g','kg','fl oz','cup','L','ml','item','pack','box','can','bag','bunch','dozen','roll','bottle','jug','tub'];
 const DEFAULT_RETAILERS=['Costco','Aldi','Amazon','Walmart','Target','Sam’s Club','Trader Joe’s','Kroger','Publix','Meijer','Whole Foods','Local Store'];
 const CATEGORY_SETS={pantry:['Proteins','Produce','Dairy','Grains & Carbs','Snacks','Beverages','Condiments','Canned Goods','Frozen','Baking','Spices','Other'],household:['Cleaning Supplies','Laundry','Paper Goods','Personal Care','Toiletries','Hair Care','Clothing','Bags & Backpacks','Medicine Cabinet','Kitchen Supplies','Bathroom Supplies','Other'],animals:['Dog Food','Cat Food','Chicken Feed','Livestock Feed','Treats','Litter / Bedding','Medications','Grooming','Bowls / Gear','Other']};
@@ -358,11 +360,26 @@ function foodStockEntries(){
   return entries.filter(e=>e.parentName && Number(e.containers)>0);
 }
 function ingredientKey(i){return `${i.collection}:${i.stockId}:${i.variantName||''}`;}
-function ingredientKind(e){const t=`${e.name} ${e.category}`.toLowerCase();if(/chicken|beef|pork|turkey|fish|salmon|tuna|egg|tofu|beans|lentil|sausage|bacon|shrimp|ham/.test(t))return'protein';if(/rice|pasta|noodle|bread|tortilla|potato|grain|oat|bun|wrap|quinoa|macaroni|spaghetti/.test(t))return'carb';if(/cheese|milk|cream|yogurt|butter|sour cream|alfredo/.test(t))return'dairy';if(/sauce|salsa|soy|hot|bbq|marinara|pesto|dressing|condiment|spice|season|ranch/.test(t))return'sauce';if(/produce|vegetable|fruit|onion|pepper|corn|tomato|spinach|lettuce|broccoli|carrot|pea|jalapeno|mushroom|zucchini/.test(t))return'veg';return'other';}
+function ingredientBaseName(i){return String(i.variantName||i.parentName||i.name||'').replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim();}
+function ingredientKind(e){
+  const t=`${e.name} ${e.parentName||''} ${e.category||''}`.toLowerCase();
+  if(/baking powder|baking soda|yeast|cornstarch|gelatin|pectin/.test(t))return'leavening';
+  if(/sugar|syrup|honey|molasses|chocolate|cocoa|frosting|jam|jelly/.test(t))return'sweetener';
+  if(/vinegar|lemon juice|lime juice|pickle/.test(t))return'acid';
+  if(/chicken|beef|steak|venison|backstrap|pork|turkey|fish|salmon|tuna|egg|tofu|beans|lentil|sausage|bacon|shrimp|ham/.test(t))return'protein';
+  if(/rice|pasta|noodle|bread|tortilla|potato|grain|oat|bun|wrap|quinoa|macaroni|spaghetti|bagel|cereal/.test(t))return'carb';
+  if(/cheese|milk|cream|yogurt|butter|sour cream|alfredo|cottage cheese/.test(t))return'dairy';
+  if(/sauce|salsa|soy|hot|bbq|marinara|pesto|dressing|condiment|spice|season|ranch|bouillon|broth|stock|base/.test(t))return'sauce';
+  if(/blueberry|strawberry|banana|apple|fruit|peach|berry|grape|raisin/.test(t))return'fruit';
+  if(/produce|vegetable|onion|pepper|corn|tomato|spinach|lettuce|broccoli|carrot|pea|jalapeno|mushroom|zucchini|potato/.test(t))return'veg';
+  if(/chip|cracker|pretzel|popcorn|nuts|trail mix/.test(t))return'snack';
+  if(/flour|cake|muffin|brownie|cookie|baking|mix/.test(t))return'baking';
+  return'other';
+}
 function mealPriority(e){let score=0;if(e.needsUse)score+=8;if(getExpStatus(e.expiration)==='expired')score+=6;if(getExpStatus(e.expiration)==='expiring')score+=7;if(e.runningLow)score-=1;return score;}
 function mealIngredients(){return foodStockEntries().sort((a,b)=>mealPriority(b)-mealPriority(a)||a.name.localeCompare(b.name));}
 function mealSearchText(i){return `${i.name} ${i.parentName} ${i.variantName||''} ${i.category||''} ${i.location||''}`.toLowerCase();}
-function savedMealSearchText(m){return `${m.name||''} ${(m.usedIngredients||[]).join(' ')} ${(m.missing||[]).join(' ')}`.toLowerCase();}
+function savedMealSearchText(m){return `${m.name||''} ${(m.usedIngredients||[]).join(' ')} ${(m.missing||[]).join(' ')} ${m.mode||''} ${m.flavor||''}`.toLowerCase();}
 function renderMeals(){
   const box=document.getElementById('meals-list');if(!box)return;
   const q=(document.getElementById('meals-search')?.value||'').toLowerCase().trim();
@@ -370,51 +387,129 @@ function renderMeals(){
   const ingredients=allIngredients.filter(i=>!q||mealSearchText(i).includes(q));
   const saved=Object.entries(savedMeals).map(([id,m])=>({id,...m})).filter(m=>!q||savedMealSearchText(m).includes(q));
   const selected=allIngredients.filter(i=>selectedMealIds.has(ingredientKey(i)));
-  const chips=ingredients.slice(0,80).map(i=>{const key=ingredientKey(i);const tags=[];if(i.needsUse)tags.push('🔥');if(getExpStatus(i.expiration)==='expiring')tags.push('⚠');return`<button class="ingredient-chip ${selectedMealIds.has(key)?'selected':''}" onclick="toggleMealIngredient('${escAttr(key)}')" type="button">${escHtml(i.icon||'🍽️')} ${escHtml(i.name)}${tags.length?` ${tags.join('')}`:''}</button>`;}).join('');
-  const selectedHtml=selected.length?`<div class="meal-section" style="margin-bottom:12px"><h4>Selected</h4><div class="ingredient-picker">${selected.map(i=>`<button class="ingredient-chip selected" onclick="toggleMealIngredient('${escAttr(ingredientKey(i))}')" type="button">${escHtml(i.icon||'🍽️')} ${escHtml(i.name)} ✕</button>`).join('')}</div></div>`:'';
+  const modeChips=['breakfast','lunch','dinner','snack'].map(m=>`<button class="meal-pref-chip ${mealMode===m?'selected':''}" onclick="setMealMode('${m}')" type="button">${m[0].toUpperCase()+m.slice(1)}</button>`).join('');
+  const flavorChips=['savory','sweet'].map(f=>`<button class="meal-pref-chip ${mealFlavor===f?'selected':''}" onclick="setMealFlavor('${f}')" type="button">${f[0].toUpperCase()+f.slice(1)}</button>`).join('');
+  const chips=ingredients.slice(0,100).map(i=>{const key=ingredientKey(i);const tags=[];if(i.needsUse)tags.push('🔥');if(getExpStatus(i.expiration)==='expiring')tags.push('⚠');return`<button class="ingredient-chip ${selectedMealIds.has(key)?'selected':''}" onclick="toggleMealIngredient('${escAttr(key)}')" type="button">${escHtml(i.icon||'🍽️')} ${escHtml(i.name)}${tags.length?` ${tags.join('')}`:''}</button>`;}).join('');
+  const selectedHtml=selected.length?`<div class="meal-section" style="margin-bottom:12px"><h4>Selected Anchor Ingredient${selected.length===1?'':'s'}</h4><div class="ingredient-picker">${selected.map(i=>`<button class="ingredient-chip selected" onclick="toggleMealIngredient('${escAttr(ingredientKey(i))}')" type="button">${escHtml(i.icon||'🍽️')} ${escHtml(i.name)} ✕</button>`).join('')}</div></div>`:'';
   const current=currentMealIdea?renderMealIdeaCard(currentMealIdea):'';
   const savedHtml=saved.length?`<div class="category-group"><div class="category-label">❤️ Saved Meals</div>${saved.map(renderSavedMealRow).join('')}</div>`:`<div class="empty-state"><div class="emoji">🍳</div><h3>No saved meals yet</h3><p>Generate an idea, then save it so Stocked can check if it is ready later.</p></div>`;
   const ingredientEmpty=q?`<span class="grocery-sub">No matching ingredients. Try a different search.</span>`:'<span class="grocery-sub">Add pantry items first.</span>';
-  box.innerHTML=`<div class="meal-actions"><button class="meal-btn" onclick="generateMealIdea('selected')" type="button">Build Around Selected</button><button class="meal-btn light" onclick="generateMealIdea('surprise')" type="button">🎲 Surprise Me</button></div>${selectedHtml}<div class="category-label">Pick 1–2 Ingredients</div><div class="ingredient-picker">${chips||ingredientEmpty}</div>${current}${savedHtml}`;
+  box.innerHTML=`<div class="meal-actions"><button class="meal-btn" onclick="generateMealIdea('selected')" type="button">Build Around Selected</button><button class="meal-btn light" onclick="generateMealIdea('surprise')" type="button">🎲 Surprise Me</button></div><div class="category-label">Meal Type</div><div class="meal-pref-row">${modeChips}</div><div class="category-label">Flavor</div><div class="meal-pref-row">${flavorChips}</div>${selectedHtml}<div class="category-label">Pick 1–2 Ingredients</div><div class="ingredient-picker">${chips||ingredientEmpty}</div>${current}${savedHtml}`;
 }
 window.renderMeals=renderMeals;
+window.setMealMode=(mode)=>{mealMode=mode;currentMealIdea=null;renderMeals();};
+window.setMealFlavor=(flavor)=>{mealFlavor=flavor;currentMealIdea=null;renderMeals();};
 window.toggleMealIngredient=(key)=>{if(selectedMealIds.has(key))selectedMealIds.delete(key);else{if(selectedMealIds.size>=2)selectedMealIds.delete([...selectedMealIds][0]);selectedMealIds.add(key);}currentMealIdea=null;renderMeals();};
 function pickOne(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function suitabilityScore(item,anchors=[]){
+  const kind=ingredientKind(item);const t=mealSearchText(item);let score=mealPriority(item);
+  if(anchors.some(a=>ingredientKey(a)===ingredientKey(item)))return 999;
+  if(mealFlavor==='savory'){
+    if(['protein','carb','veg','dairy','sauce'].includes(kind))score+=8;
+    if(['sweetener','leavening','baking','fruit'].includes(kind))score-=20;
+    if(kind==='acid')score-=6;
+  }else{
+    if(['fruit','dairy','carb','sweetener','baking'].includes(kind))score+=8;
+    if(['protein','sauce','acid'].includes(kind))score-=12;
+    if(/egg|milk|butter|yogurt|oat|bagel|bread/.test(t))score+=5;
+  }
+  if(mealMode==='breakfast'){
+    if(/egg|bacon|sausage|ham|oat|cereal|yogurt|bagel|bread|fruit|milk|cheese|potato/.test(t))score+=12;
+    if(kind==='protein'&&!/egg|bacon|sausage|ham/.test(t))score-=8;
+  }
+  if(mealMode==='lunch'){if(['protein','carb','veg','dairy','sauce','snack'].includes(kind))score+=5;if(kind==='leavening')score-=15;}
+  if(mealMode==='dinner'){if(['protein','carb','veg','dairy','sauce'].includes(kind))score+=7;if(['leavening','sweetener'].includes(kind))score-=18;}
+  if(mealMode==='snack'){if(['snack','fruit','dairy','carb','sweetener'].includes(kind))score+=12;if(kind==='protein')score-=3;if(kind==='leavening')score-=15;}
+  for(const a of anchors){
+    const ak=ingredientKind(a);
+    if(ak==='protein'&&['carb','veg','sauce','dairy'].includes(kind))score+=10;
+    if(ak==='carb'&&['protein','veg','dairy','sauce','fruit'].includes(kind))score+=8;
+    if(ak==='fruit'&&['dairy','carb','sweetener'].includes(kind))score+=10;
+    if(ak==='snack'&&['dairy','sauce','protein','fruit'].includes(kind))score+=7;
+    if(ak==='dairy'&&['carb','fruit','protein','veg'].includes(kind))score+=7;
+  }
+  return score;
+}
 function chooseMealBaseForSurprise(all){
-  const priority=all.filter(i=>i.needsUse||getExpStatus(i.expiration)==='expiring'||getExpStatus(i.expiration)==='expired');
-  const pool=priority.length?priority:all;
-  const first=pickOne(pool.slice(0,Math.min(pool.length,10)));
-  const second=all.find(i=>ingredientKey(i)!==ingredientKey(first)&&['protein','carb','veg'].includes(ingredientKind(i))&&ingredientKind(i)!==ingredientKind(first));
+  const candidates=all.filter(i=>suitabilityScore(i,[])>-5);
+  const pool=(candidates.length?candidates:all).slice().sort((a,b)=>suitabilityScore(b,[])-suitabilityScore(a,[]));
+  const first=pickOne(pool.slice(0,Math.min(pool.length,8)));
+  const second=pool.find(i=>ingredientKey(i)!==ingredientKey(first)&&suitabilityScore(i,[first])>0&&ingredientKind(i)!==ingredientKind(first));
   return second?[first,second]:[first];
+}
+function chooseSupportingIngredients(all,anchors){
+  const chosen=[...anchors.map(a=>({...a,mealAnchor:true}))];
+  const wanted=mealFlavor==='sweet'
+    ? (mealMode==='snack'?['fruit','dairy','carb','sweetener']:['carb','fruit','dairy','sweetener','baking'])
+    : (mealMode==='snack'?['snack','dairy','fruit','sauce','protein']:['protein','carb','veg','sauce','dairy']);
+  for(const kind of wanted){
+    if(chosen.length>=5)break;
+    if(chosen.some(i=>ingredientKind(i)===kind))continue;
+    const candidate=all.filter(i=>!chosen.some(x=>ingredientKey(x)===ingredientKey(i))&&ingredientKind(i)===kind).sort((a,b)=>suitabilityScore(b,anchors)-suitabilityScore(a,anchors))[0];
+    if(candidate&&suitabilityScore(candidate,anchors)>-2)chosen.push(candidate);
+  }
+  while(chosen.length<3&&chosen.length<all.length){
+    const candidate=all.filter(i=>!chosen.some(x=>ingredientKey(x)===ingredientKey(i))).sort((a,b)=>suitabilityScore(b,anchors)-suitabilityScore(a,anchors))[0];
+    if(!candidate||suitabilityScore(candidate,anchors)<-8)break;
+    chosen.push(candidate);
+  }
+  return chosen;
 }
 window.generateMealIdea=(mode='surprise')=>{
   const all=mealIngredients();if(!all.length){showToast('Add pantry items first');return;}
-  let selected=[];
+  let anchors=[];
   if(mode==='selected'){
-    selected=all.filter(i=>selectedMealIds.has(ingredientKey(i)));
-    if(!selected.length){showToast('Select 1 or 2 ingredients first');return;}
-  } else selected=chooseMealBaseForSurprise(all);
-  const chosen=[...selected];
-  const kinds=new Set(chosen.map(ingredientKind));
-  ['protein','carb','veg','dairy','sauce'].forEach(kind=>{
-    if(chosen.length<5&&!kinds.has(kind)){
-      const c=all.find(i=>ingredientKind(i)===kind&&!chosen.some(x=>ingredientKey(x)===ingredientKey(i)));
-      if(c){chosen.push(c);kinds.add(kind);}
-    }
-  });
-  while(chosen.length<3&&chosen.length<all.length){const c=all.find(i=>!chosen.some(x=>ingredientKey(x)===ingredientKey(i)));if(!c)break;chosen.push(c);}
-  const profile=chooseMealProfile(chosen), missing=suggestMissingForProfile(profile,chosen), name=makeMealName(profile,chosen);
-  const why=mode==='selected'?`Built around ${selected.map(i=>i.name).join(' + ')} using what is in your pantry.`:(chosen.some(i=>i.needsUse||getExpStatus(i.expiration)==='expiring')?'Surprise idea prioritizing expiring or needs-use items.':'Surprise idea using items already in your pantry.');
-  currentMealIdea={id:'idea_'+Date.now(),name,profile,why,used:chosen,usedIngredients:chosen.map(i=>i.name),missing,instructions:makeInstructions(profile,chosen,missing),createdAt:Date.now(),saved:false};
+    anchors=all.filter(i=>selectedMealIds.has(ingredientKey(i)));
+    if(!anchors.length){showToast('Select 1 or 2 ingredients first');return;}
+  } else anchors=chooseMealBaseForSurprise(all);
+  const chosen=chooseSupportingIngredients(all,anchors);
+  const profile=chooseMealProfile(chosen,anchors), missing=suggestMissingForProfile(profile,chosen), name=makeMealName(profile,chosen,anchors);
+  const why=mode==='selected'?`Built around ${anchors.map(i=>i.name).join(' + ')} as a ${mealFlavor} ${mealMode}.`:(chosen.some(i=>i.needsUse||getExpStatus(i.expiration)==='expiring')?`Surprise ${mealFlavor} ${mealMode} prioritizing expiring or needs-use items.`:`Surprise ${mealFlavor} ${mealMode} using items already in your pantry.`);
+  currentMealIdea={id:'idea_'+Date.now(),name,profile,mode:mealMode,flavor:mealFlavor,why,used:chosen,usedIngredients:chosen.map(i=>i.name),missing,instructions:makeInstructions(profile,chosen,missing,anchors),createdAt:Date.now(),saved:false};
   renderMeals();
 };
-function chooseMealProfile(items){const has=k=>items.some(i=>ingredientKind(i)===k);if(has('carb')&&has('protein')&&has('sauce'))return pickOne(['rice bowl','skillet','stir fry','wraps']);if(has('carb')&&has('dairy'))return pickOne(['bake','creamy pasta','melts']);if(has('protein')&&has('veg'))return pickOne(['sheet pan','salad bowls','skillet']);if(has('carb'))return pickOne(['loaded bowls','quick tacos','comfort bake']);return pickOne(['pantry hash','loaded bowls','skillet']);}
+function chooseMealProfile(items,anchors=[]){
+  const has=k=>items.some(i=>ingredientKind(i)===k);const anchor=anchors[0]||items[0];const ak=ingredientKind(anchor);
+  if(mealFlavor==='sweet'){
+    if(mealMode==='breakfast')return has('dairy')?pickOne(['breakfast parfait','sweet breakfast bowl','yogurt bowl']):pickOne(['sweet toast','breakfast bake']);
+    if(mealMode==='snack')return pickOne(['sweet snack plate','fruit dip plate','quick sweet bites']);
+    return pickOne(['simple dessert bowl','sweet bake','fruit crumble']);
+  }
+  if(mealMode==='breakfast')return pickOne(['breakfast skillet','savory breakfast bowl','breakfast wrap']);
+  if(mealMode==='snack')return pickOne(['savory snack plate','loaded bites','quick dip plate']);
+  if(ak==='protein')return has('carb')?pickOne(['dinner skillet','rice bowl','loaded wraps','pantry tacos']):pickOne(['sheet pan dinner','protein skillet','savory plate']);
+  if(has('carb')&&has('protein')&&has('sauce'))return pickOne(['rice bowl','skillet','stir fry','wraps']);
+  if(has('carb')&&has('dairy'))return pickOne(['bake','creamy pasta','melts']);
+  if(has('protein')&&has('veg'))return pickOne(['sheet pan','salad bowls','skillet']);
+  if(has('carb'))return pickOne(['loaded bowls','quick tacos','comfort bake']);
+  return pickOne(['pantry hash','loaded bowls','skillet']);
+}
 function mainIngredient(items,kind){return items.find(i=>ingredientKind(i)===kind)||items[0];}
-function makeMealName(profile,items){const p=mainIngredient(items,'protein');const c=mainIngredient(items,'carb');const v=mainIngredient(items,'veg');if(profile.includes('rice'))return `${p.name} ${c.name} Bowls`;if(profile.includes('stir'))return `${p.name} Stir Fry`;if(profile.includes('wrap')||profile.includes('taco'))return `${p.name} ${v?.name||c?.name||''} Wraps`.replace('  ',' ');if(profile.includes('pasta'))return `Creamy ${p.name} Pasta`;if(profile.includes('bake'))return `${p.name} ${c?.name||''} Bake`.replace('  ',' ');if(profile.includes('sheet'))return `Sheet Pan ${p.name} & ${v?.name||c?.name||'Sides'}`;return `${p.name} Pantry ${profile.replace(/^./,m=>m.toUpperCase())}`;}
+function makeMealName(profile,items,anchors=[]){
+  const anchor=anchors[0]||items.find(i=>i.mealAnchor)||items[0];const a=ingredientBaseName(anchor);
+  const p=mainIngredient(items,'protein'), c=mainIngredient(items,'carb'), v=mainIngredient(items,'veg'), f=mainIngredient(items,'fruit'), d=mainIngredient(items,'dairy');
+  if(mealFlavor==='sweet'){
+    if(profile.includes('parfait')||profile.includes('yogurt'))return `${a} ${d?.name||'Yogurt'} Parfait`;
+    if(profile.includes('snack'))return `${a} Sweet Snack Plate`;
+    if(profile.includes('bake'))return `${a} Breakfast Bake`;
+    if(profile.includes('crumble'))return `${a} Fruit Crumble`;
+    return `${a} Sweet Bowl`;
+  }
+  if(profile.includes('breakfast'))return `${a} Savory Breakfast`;
+  if(profile.includes('snack'))return `${a} Snack Plate`;
+  if(profile.includes('rice'))return `${a} ${c?.name||'Rice'} Bowl`;
+  if(profile.includes('stir'))return `${a} Stir Fry`;
+  if(profile.includes('wrap')||profile.includes('taco'))return `${a} ${v?.name||c?.name||''} Wraps`.replace('  ',' ');
+  if(profile.includes('pasta'))return `Creamy ${a} Pasta`;
+  if(profile.includes('bake'))return `${a} ${c?.name||''} Bake`.replace('  ',' ');
+  if(profile.includes('sheet'))return `Sheet Pan ${a} & ${v?.name||c?.name||'Sides'}`;
+  if(profile.includes('skillet'))return `${a} Dinner Skillet`;
+  return `${a} ${profile.replace(/^./,m=>m.toUpperCase())}`;
+}
 function hasTerm(items,terms){return items.some(i=>terms.some(t=>i.name.toLowerCase().includes(t)));}
-function suggestMissingForProfile(profile,items){const miss=[];if(!hasTerm(items,['onion','garlic']))miss.push('onion or garlic');if(/stir fry|rice bowl/.test(profile)&&!hasTerm(items,['soy','teriyaki']))miss.push('soy sauce');if(/wrap|taco/.test(profile)&&!hasTerm(items,['salsa','tortilla','wrap']))miss.push('salsa or tortillas');if(/creamy|bake|melts/.test(profile)&&!hasTerm(items,['cheese','cream','milk']))miss.push('cheese or cream');return miss.slice(0,3);}
-function makeInstructions(profile,items,missing){const names=items.map(i=>i.name);return[`Prep ${names.slice(0,3).join(', ')} and any vegetables you want to use.`,`Cook the main protein or hearty ingredient first, then add the supporting pantry items.`,`Season to taste${missing.length?` — ${missing[0]} would make it better, but it is optional.`:'.'}`,`Serve as a ${profile}; save leftovers for an easy lunch.`];}
-function renderMealIdeaCard(meal){return`<div class="meal-card"><div class="meal-title">${escHtml(meal.name)}</div><div class="meal-sub">${escHtml(meal.why||'Live idea using your current stock.')}</div><div class="meal-section"><h4>Uses From Stock</h4><div class="meal-list">${(meal.used||[]).map(i=>`<div class="meal-line used">✓ ${escHtml(i.name)}${i.expiration?` · exp. ${escHtml(i.expiration)}`:''}</div>`).join('')}</div></div>${meal.missing?.length?`<div class="meal-section"><h4>Would Improve It</h4><div class="meal-list">${meal.missing.map(m=>`<div class="meal-line missing">＋ ${escHtml(m)}</div>`).join('')}</div></div>`:''}<div class="meal-section"><h4>Simple Plan</h4><div class="meal-list">${(meal.instructions||[]).map(s=>`<div class="meal-line">${escHtml(s)}</div>`).join('')}</div></div><div class="detail-actions"><button class="btn-sm btn-grocery" onclick="saveCurrentMealIdea()" type="button">❤️ Save Meal</button><button class="btn-sm btn-edit" onclick="addMealMissingToGrocery()" type="button">🛒 Add Missing</button><button class="btn-sm btn-low" onclick="cookCurrentMeal()" type="button">✓ Cooked It</button></div></div>`;}
+function suggestMissingForProfile(profile,items){const miss=[];if(mealFlavor==='sweet'){if(!hasTerm(items,['vanilla','cinnamon']))miss.push('vanilla or cinnamon');if(!hasTerm(items,['cream','yogurt','milk']))miss.push('cream, yogurt, or milk');return miss.slice(0,3);}if(!hasTerm(items,['onion','garlic']))miss.push('onion or garlic');if(/stir fry|rice bowl/.test(profile)&&!hasTerm(items,['soy','teriyaki']))miss.push('soy sauce');if(/wrap|taco/.test(profile)&&!hasTerm(items,['salsa','tortilla','wrap']))miss.push('salsa or tortillas');if(/creamy|bake|melts/.test(profile)&&!hasTerm(items,['cheese','cream','milk']))miss.push('cheese or cream');return miss.slice(0,3);}
+function makeInstructions(profile,items,missing,anchors=[]){const anchorNames=anchors.length?anchors.map(i=>i.name).join(' and '):items[0]?.name;const support=items.filter(i=>!anchors.some(a=>ingredientKey(a)===ingredientKey(i))).map(i=>i.name);if(mealFlavor==='sweet')return[`Start with ${anchorNames} as the main flavor.`,`Add ${support.slice(0,3).join(', ')||'a simple pantry pairing'} to build texture and balance.`,`Sweeten or season lightly${missing.length?` — ${missing[0]} would help if you have it.`:'.'}`,`Serve as a ${mealMode} ${profile}.`];return[`Make ${anchorNames} the main ingredient, not just a side note.`,`Use ${support.slice(0,3).join(', ')||'a simple pantry side'} to turn it into a complete ${mealMode}.`,`Season to taste${missing.length?` — ${missing[0]} would make it better, but it is optional.`:'.'}`,`Serve as a ${profile}; save leftovers if you have enough.`];}
+function renderMealIdeaCard(meal){return`<div class="meal-card"><div class="meal-title">${escHtml(meal.name)}</div><div class="meal-sub">${escHtml(meal.why||'Live idea using your current stock.')}</div><div class="meal-section"><h4>Uses From Stock</h4><div class="meal-list">${(meal.used||[]).map(i=>`<div class="meal-line used">✓ ${escHtml(i.name)}${i.mealAnchor?' · anchor':''}${i.expiration?` · exp. ${escHtml(i.expiration)}`:''}</div>`).join('')}</div></div>${meal.missing?.length?`<div class="meal-section"><h4>Would Improve It</h4><div class="meal-list">${meal.missing.map(m=>`<div class="meal-line missing">＋ ${escHtml(m)}</div>`).join('')}</div></div>`:''}<div class="meal-section"><h4>Simple Plan</h4><div class="meal-list">${(meal.instructions||[]).map(s=>`<div class="meal-line">${escHtml(s)}</div>`).join('')}</div></div><div class="detail-actions"><button class="btn-sm btn-grocery" onclick="saveCurrentMealIdea()" type="button">❤️ Save Meal</button><button class="btn-sm btn-edit" onclick="addMealMissingToGrocery()" type="button">🛒 Add Missing</button><button class="btn-sm btn-low" onclick="cookCurrentMeal()" type="button">✓ Cooked It</button></div></div>`;}
 function renderSavedMealRow(meal){const readiness=mealReadiness(meal);return`<div class="saved-meal-row"><div><div class="saved-meal-name">${escHtml(meal.name)}</div><div class="saved-meal-meta">${readiness.ready?'Ready now':`Missing ${readiness.missing.length}`} · ${meal.usedIngredients?.length||0} ingredients</div></div><div style="display:flex;gap:6px"><button class="tiny-action" onclick="loadSavedMeal('${meal.id}')" type="button">Open</button><button class="tiny-action" onclick="deleteSavedMeal('${meal.id}')" type="button">Delete</button></div></div>`;}
 function mealReadiness(meal){const have=foodStockEntries().map(i=>i.name.toLowerCase());const missing=(meal.usedIngredients||[]).filter(n=>!have.some(h=>h.includes(String(n).toLowerCase().split(' (')[0])));return{ready:missing.length===0,missing};}
 window.saveCurrentMealIdea=async()=>{if(!currentMealIdea||!householdId)return;const data={name:currentMealIdea.name,profile:currentMealIdea.profile,why:currentMealIdea.why,usedIngredients:currentMealIdea.usedIngredients||[],missing:currentMealIdea.missing||[],instructions:currentMealIdea.instructions||[],createdAt:Date.now(),createdBy:currentUser?.email||''};await set(push(ref(db,`households/${householdId}/meals`)),data);showToast('Meal saved');};
